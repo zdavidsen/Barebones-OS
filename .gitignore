@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 # Created by https://www.gitignore.io/api/c,vim,latex,linux,emacs
 
@@ -372,3 +373,7 @@ Session.vim
 tags
 
 # End of https://www.gitignore.io/api/c,vim,latex,linux,emacs
+=======
+*.o
+*~
+>>>>>>> 2899abc19fc2e478ab86df0828c80e25c0ff5b1b
