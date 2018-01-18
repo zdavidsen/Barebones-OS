@@ -2,28 +2,28 @@
 #include "./functions.h"
 
 int main() {
-char line[512];
-char *hello;
+  char line[512];
+  char *hello;
 
-hello = "Hello World\n\r";
+  hello = "Hello World\n\r";
 
-printString(hello);
+  printString(hello);
 
-printString("Enter a new line: \0");
+  printString("Enter a new line: \0");
 
-readString(line);
+  readString(line);
 
-printString(line);
+  printString(line);
 
-readSector(line, 30);
-printString(line);
+  readSector(line, 30);
+  printString(line);
 
-makeInterrupt21();
-interrupt(0x21, 1, line, 0, 0);
-interrupt(0x21, 0, line, 0, 0);
+  makeInterrupt21();
+  interrupt(0x21, 1, line, 0, 0);
+  interrupt(0x21, 0, line, 0, 0);
 
-while(1)
-  continue;
+  while (1)
+    continue;
 
-return 0;
+  return 0;
 }

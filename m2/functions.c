@@ -18,16 +18,16 @@ int mod(int a, int b) {
 }
 
 void printString(char *str) {
-char al, ah;
-int ax, i;
+  char al, ah;
+  int ax, i;
 
-for (i = 0;; i++) {
-  al = str[i];
-  if (al == 0)
-    break;
-  ah = 0xE;
-  ax = ah * 256 + al;
-  interrupt(0x10, ax, 0, 0, 0);
+  for (i = 0;; i++) {
+    al = str[i];
+    if (al == 0)
+      break;
+    ah = 0xE;
+    ax = ah * 256 + al;
+    interrupt(0x10, ax, 0, 0, 0);
   }
 }
 
@@ -48,19 +48,19 @@ void readString(char *line) {
     interrupt(0x10, ax, 0, 0, 0);
     return;
   } else if (temp == 0x8) {
-      if ( i > 0 )
-        i--;
-      ax = 0xE * 256 + 0x8;
-      interrupt(0x10, ax, 0, 0, 0);
-      ax = 0xE * 256 + ' ';
-      interrupt(0x10, ax, 0, 0, 0);
-      ax = 0xE * 256 + 0x8;
-      interrupt(0x10, ax, 0, 0, 0);
+    if ( i > 0 )
+      i--;
+    ax = 0xE * 256 + 0x8;
+    interrupt(0x10, ax, 0, 0, 0);
+    ax = 0xE * 256 + ' ';
+    interrupt(0x10, ax, 0, 0, 0);
+    ax = 0xE * 256 + 0x8;
+    interrupt(0x10, ax, 0, 0, 0);
   } else {
-      line[i] = temp;
-      i++;
-      ax = 0xE * 256 + temp;
-      interrupt(0x10, ax, 0, 0, 0);
+    line[i] = temp;
+    i++;
+    ax = 0xE * 256 + temp;
+    interrupt(0x10, ax, 0, 0, 0);
   }
 }
 }
@@ -85,17 +85,17 @@ void readSector(char *buffer, int sector) {
 }
 
 void handleInterrupt21(int ax, int bx, int cx, int dx) {
-switch (ax) {
-case 0:
-        printString(bx);
-        break;
-case 1:
-        readString(bx);
-        break;
-case 2:
-        readSector(bx, cx);
-        break;
-default:
-        printString("Incorrect ax value.\n\r");
-}
+  switch (ax) {
+  case 0:
+    printString(bx);
+    break;
+  case 1:
+    readString(bx);
+    break;
+  case 2:
+    readSector(bx, cx);
+    break;
+  default:
+    printString("Incorrect ax value.\n\r");
+  }
 }
