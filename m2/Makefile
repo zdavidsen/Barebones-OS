@@ -44,4 +44,4 @@ run: all
 	qemu-system-i386 -fda floppya.img -boot a -no-fd-bootchk
 
 clean:
-	rm -f core kernel bootload *.o *~
+	rm -f core kernel bootload *.o *~ floppya.img
