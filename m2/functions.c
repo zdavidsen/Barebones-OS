@@ -17,12 +17,12 @@ int mod(int a, int b) {
   return a;
 }
 
-void printString(char *string) {
+void printString(char *str) {
 char al, ah;
 int ax, i;
 
 for (i = 0;; i++) {
-  al = string[i];
+  al = str[i];
   if (al == 0)
     break;
   ah = 0xE;
@@ -31,7 +31,7 @@ for (i = 0;; i++) {
   }
 }
 
-void readString(char *string) {
+void readString(char *line) {
   char temp, al, ah;
   int ax, i;
   i = 0;
@@ -39,9 +39,9 @@ void readString(char *string) {
   ax = 0;
   temp = interrupt(0x16, ax, 0, 0, 0);
   if (temp == 0xd) {
-    string[i] = 0xa;
-    string[i+1] = 0xd;
-    string[i+2] = 0x0;
+    line[i] = 0xa;
+    line[i+1] = 0xd;
+    line[i+2] = 0x0;
     ax = 0xE * 256 + 0xa;
     interrupt(0x10, ax, 0, 0, 0);
     ax = 0xE * 256 + 0xd;
@@ -57,7 +57,7 @@ void readString(char *string) {
       ax = 0xE * 256 + 0x8;
       interrupt(0x10, ax, 0, 0, 0);
   } else {
-      string[i] = temp;
+      line[i] = temp;
       i++;
       ax = 0xE * 256 + temp;
       interrupt(0x10, ax, 0, 0, 0);
@@ -82,4 +82,20 @@ void readSector(char *buffer, int sector) {
   dx = dh*256 + dl;
 
   interrupt(0x13, ax, bx, cx, dx);
+}
+
+void handleInterrupt21(int ax, int bx, int cx, int dx) {
+switch (ax) {
+case 0:
+        printString(bx);
+        break;
+case 1:
+        readString(bx);
+        break;
+case 2:
+        readSector(bx, cx);
+        break;
+default:
+        printString("Incorrect ax value.\n\r");
+}
 }
