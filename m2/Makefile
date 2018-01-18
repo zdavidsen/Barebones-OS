@@ -12,7 +12,8 @@ all: floppya.img
 
 #makes a new floppy if one doesn't exist
 floppya.img::
-	[ -r floppya.img ] || $(NEWFLOPPY)
+	[ -r floppya.img ] || $(NEWFLOPPY);
+	dd if=message.txt of=floppya.img bs=512 count=1 seek=30 conv=notrunc
 
 bootload: bootload.asm
 	nasm bootload.asm
