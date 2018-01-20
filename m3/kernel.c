@@ -1,19 +1,22 @@
-/* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/17/18*/
+/* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/20/18*/
 
 void printString(char* str);
 void readString(char* line);
 void readSector(char* buffer, int sector);
 void readFile(char *name, char *buffer);
 void executeProgram(char *name, int segment);
+void terminate();
 
 int main() {
   char buffer[13312];
   makeInterrupt21();
 
-  interrupt(0x21, 3, "messag", buffer, 0);
+  interrupt(0x21, 4, "shell", 0x2000, 0);
+
+  /*interrupt(0x21, 3, "messag", buffer, 0);
   interrupt(0x21, 0, buffer, 0, 0);
 
-  interrupt(0x21, 4, "tstprg", 0x2000, 0);
+  interrupt(0x21, 4, "tstpr2", 0x2000, 0);*/
 
   while (1)
     continue;
@@ -61,6 +64,9 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     break;
   case 4:
     executeProgram(bx, cx);
+    break;
+  case 5:
+    terminate();
     break;
   default:
     printString(error);
@@ -197,4 +203,16 @@ void executeProgram(char *name, int segment) {
   }
 
   launchProgram(segment);
+}
+
+void terminate() {
+  char str[6];
+str[0] = 's';
+str[1] = 'h';
+str[2] = 'e';
+str[3] = 'l';
+str[4] = 'l';
+str[5] = '\0';
+
+  interrupt(0x21, 4, str, 0x2000, 0);
 }
