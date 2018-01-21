@@ -207,12 +207,12 @@ void executeProgram(char *name, int segment) {
 
 void terminate() {
   char str[6];
-str[0] = 's';
-str[1] = 'h';
-str[2] = 'e';
-str[3] = 'l';
-str[4] = 'l';
-str[5] = '\0';
+  str[0] = 's';
+  str[1] = 'h';
+  str[2] = 'e';
+  str[3] = 'l';
+  str[4] = 'l';
+  str[5] = '\0';
 
   interrupt(0x21, 4, str, 0x2000, 0);
 }

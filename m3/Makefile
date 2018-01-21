@@ -10,15 +10,16 @@ all: floppya.img
 
 #makes a new floppy if one doesn't exist
 floppya.img:: loadFile shell
-	if ! [ -e floppya.img ]; then \
-		dd if=/dev/zero of=floppya.img bs=512 count=2880; \
-		dd if=map.img of=floppya.img bs=512 seek=1 conv=notrunc; \
-		dd if=dir.img of=floppya.img bs=512 seek=2 conv=notrunc; \
-		./loadFile shell ; \
-		./loadFile message.txt; \
-		./loadFile tstprg; \
-		./loadFile tstpr2; \
-	fi
+	dd if=/dev/zero of=floppya.img bs=512 count=2880
+	dd if=map.img of=floppya.img bs=512 seek=1 conv=notrunc
+	dd if=dir.img of=floppya.img bs=512 seek=2 conv=notrunc
+	./loadFile shell
+	./loadFile message.txt
+	./loadFile tstprg
+	./loadFile tstpr2
+	#force bootload and kernel to be written to disk
+	touch bootload
+	touch kernel
 
 loadFile: loadFile.c
 	gcc loadFile.c -o loadFile
@@ -47,7 +48,7 @@ lib.o: lib.asm
 	$(AS) lib.asm -o lib.o
 
 run: all
-	qemu-system-i386 -fda floppya.img -boot a -no-fd-bootchk
+	qemu-system-i386 -fda floppya.img -boot a
 
 clean:
 	rm -f core kernel bootload *.o *~ floppya.img loadFile shell
