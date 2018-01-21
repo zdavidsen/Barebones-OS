@@ -18,8 +18,8 @@ floppya.img:: loadFile shell
 	./loadFile tstprg
 	./loadFile tstpr2
 	#force bootload and kernel to be written to disk
-	touch bootload
-	touch kernel
+	[ ! -e bootload ] || touch bootload
+	[ ! -e kernel ] || touch kernel
 
 loadFile: loadFile.c
 	gcc loadFile.c -o loadFile
@@ -48,7 +48,7 @@ lib.o: lib.asm
 	$(AS) lib.asm -o lib.o
 
 run: all
-	qemu-system-i386 -fda floppya.img -boot a
+	qemu-system-i386 -fda floppya.img -boot a -no-fd-bootchk
 
 clean:
 	rm -f core kernel bootload *.o *~ floppya.img loadFile shell

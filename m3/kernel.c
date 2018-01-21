@@ -112,9 +112,10 @@ void readString(char *line) {
   ax = 0;
   temp = interrupt(0x16, ax, 0, 0, 0);
   if (temp == 0xd) {
-    line[i] = 0xa;
+    line[i] = 0;
+    /* line[i] = 0xa;
     line[i+1] = 0xd;
-    line[i+2] = 0x0;
+    line[i+2] = 0x0; */
     ax = 0xE * 256 + 0xa;
     interrupt(0x10, ax, 0, 0, 0);
     ax = 0xE * 256 + 0xd;
@@ -159,7 +160,7 @@ void readSector(char *buffer, int sector) {
 
 int strnCmp(char *str1, char *str2, int length) {
   int i, ret;
-  
+
   for (i = 0; i < length; i++) {
     ret = str1[i] - str2[i];
     if (ret != 0)
