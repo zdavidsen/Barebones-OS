@@ -122,14 +122,15 @@ void readString(char *line) {
     interrupt(0x10, ax, 0, 0, 0);
     return;
   } else if (temp == 0x8) {
-    if ( i > 0 )
+    if ( i > 0 ) {
       i--;
-    ax = 0xE * 256 + 0x8;
-    interrupt(0x10, ax, 0, 0, 0);
-    ax = 0xE * 256 + ' ';
-    interrupt(0x10, ax, 0, 0, 0);
-    ax = 0xE * 256 + 0x8;
-    interrupt(0x10, ax, 0, 0, 0);
+      ax = 0xE * 256 + 0x8;
+      interrupt(0x10, ax, 0, 0, 0);
+      ax = 0xE * 256 + ' ';
+      interrupt(0x10, ax, 0, 0, 0);
+      ax = 0xE * 256 + 0x8;
+      interrupt(0x10, ax, 0, 0, 0);
+    }
   } else {
     line[i] = temp;
     i++;

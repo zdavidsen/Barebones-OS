@@ -18,6 +18,9 @@ int main() {
     for (i = 0; i < 80; i++) {
       cmdBuf[i] = 0;
     }
+    for (i = 0; i < 13312; i++) {
+      buffer[i] = 0;
+    }
 
     interrupt(PRINTSTRING, "SHELL: ", 0, 0);
     interrupt(READSTRING, cmdBuf, 0, 0);
