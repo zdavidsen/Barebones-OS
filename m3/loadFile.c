@@ -6,14 +6,14 @@
 
 #include <stdio.h>
 
-main(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
 	int i;
 
 	if (argc<2)
 	{
 		printf("Specify file name to load\n");
-		return;
+		return 0;
 	}
 
 	//open the source file
@@ -22,7 +22,7 @@ main(int argc, char* argv[])
 	if (loadFil==0)
 	{
 		printf("File not found\n");
-		return;
+		return 0;
 	}
 
 	//open the floppy image
@@ -31,7 +31,7 @@ main(int argc, char* argv[])
 	if (floppy==0)
 	{
 		printf("floppya.img not found\n");
-		return;
+		return 0;
 	}
 
 	//load the disk map
@@ -53,7 +53,7 @@ main(int argc, char* argv[])
 	if (i==512)
 	{
 		printf("Not enough room in directory\n");
-		return;
+		return 0;
 	}
 	int dirindex=i;
 
@@ -77,7 +77,7 @@ main(int argc, char* argv[])
 		if (sectcount==26)
 		{
 			printf("Not enough space in directory entry for file\n");
-			return;
+			return 0;
 		}
 
 		//find a free map entry
@@ -87,7 +87,7 @@ main(int argc, char* argv[])
 		if (i==256)
 		{
 			printf("Not enough room for file\n");
-			return;
+			return 0;
 		}
 
 		//mark the map entry as taken
