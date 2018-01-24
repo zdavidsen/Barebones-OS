@@ -9,10 +9,11 @@ LD = ld86
 all: floppya.img
 
 #makes a new floppy if one doesn't exist
-floppya.img:: loadFile shell
+floppya.img::
 	dd if=/dev/zero of=floppya.img bs=512 count=2880
 	dd if=map.img of=floppya.img bs=512 seek=1 conv=notrunc
 	dd if=dir.img of=floppya.img bs=512 seek=2 conv=notrunc
+	make loadFile shell
 	./loadFile shell
 	./loadFile message.txt
 	./loadFile tstprg
@@ -47,7 +48,7 @@ shell: shell.c lib.o
 lib.o: lib.asm
 	$(AS) lib.asm -o lib.o
 
-run: all
+run:
 	qemu-system-i386 -fda floppya.img -boot a -no-fd-bootchk
 
 clean:
