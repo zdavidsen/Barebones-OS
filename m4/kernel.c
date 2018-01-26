@@ -235,7 +235,7 @@ void readFile(char *file, char *buffer, int *readCount) {
   error[15] = '\n';
   error[16] = '\r';
   error[17] = '\0';
-  printString(error);
+  //printString(error);
   *readCount = -1;
   return ;
 }

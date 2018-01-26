@@ -1,14 +1,6 @@
 /* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/20/18*/
 
-#define PRINTSTRING 0x21, 0
-#define READSTRING 0x21, 1
-#define READSECTOR 0x21, 2
-#define READFILE 0x21, 3
-#define EXECUTEPROGRAM 0x21, 4
-#define TERMINATE 0x21, 5
-#define WRITESECTOR 0x21, 6
-#define DELETEFILE 0x21, 7
-#define WRITEFILE 0x21, 8
+#include "./syscall.h"
 
 int strnCmp(char *str1, char *str2, int length);
 void parseArguments(char *args, int *argc, char **argv);
@@ -36,22 +28,26 @@ int main() {
     parseArguments(cmdBuf, &argCount, argArray);
 
     if (strnCmp(argArray[0], "type", 4) == 0 && argCount >= 2) {
-      interrupt(READFILE, argArray[1], buffer, &readCount);
-      interrupt(PRINTSTRING, buffer, 0, 0);
-      interrupt(PRINTSTRING, "\n\r", 0, 0);
-    } else if (strnCmp(argArray[0], "execute", 7) == 0 && argCount >= 2) {
-      interrupt(EXECUTEPROGRAM, argArray[1], 0x3000);
-    } else if (strnCmp(argArray[0], "delete", 6) == 0) {
-      interrupt(DELETEFILE, argArray[1], 0, 0);
-    } else if (strnCmp(argArray[0], "copy", 4) == 0 && argCount == 3) {
-      interrupt(READFILE, argArray[1], buffer, &readCount);
+      readFile(argArray[1], buffer, &readCount);
       if (readCount > 0) {
-        interrupt(WRITEFILE, argArray[2], buffer, readCount);
+        printString(buffer);
+        printString("\n\r");
       } else {
-        interrupt(PRINTSTRING, "FILE NOT FOUND\n\r", 0, 0);
+        printString("FILE NOT FOUND\n\r");
+      }
+    } else if (strnCmp(argArray[0], "execute", 7) == 0 && argCount >= 2) {
+      executeProgram(argArray[1], 0x3000);
+    } else if (strnCmp(argArray[0], "delete", 6) == 0) {
+      deleteFile(argArray[1]);
+    } else if (strnCmp(argArray[0], "copy", 4) == 0 && argCount == 3) {
+      readFile(argArray[1], buffer, &readCount);
+      if (readCount > 0) {
+        writeFile(argArray[2], buffer, readCount);
+      } else {
+        printString("FILE NOT FOUND\n\r");
       }
     } else {
-      interrupt(PRINTSTRING, "Invalid Command\n\r", 0, 0);
+      printString("Invalid Command\n\r");
     }
   }
 }

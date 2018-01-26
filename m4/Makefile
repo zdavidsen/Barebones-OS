@@ -40,7 +40,7 @@ kernel_asm.o: kernel.asm
 floppya.img:: kernel
 	dd if=kernel of=floppya.img bs=512 conv=notrunc seek=3
 
-shell: shell.c lib.o
+shell: shell.c syscall.h lib.o
 	$(CC) $(CFLAGS) -o shell.o shell.c
 	$(LD) -o shell -d shell.o lib.o
 
