@@ -8,6 +8,7 @@
 #define TERMINATE 0x21, 5
 #define WRITESECTOR 0x21, 6
 #define DELETEFILE 0x21, 7
+#define WRITEFILE 0x21, 8
 
 int strnCmp(char *str1, char *str2, int length);
 void parseArguments(char *args, int *argc, char **argv);
@@ -18,6 +19,7 @@ int main() {
   char buffer[13312];
   int argCount;
   char *argArray[5];
+  int readCount;
 
   while (1) {
     for (i = 0; i < 80; i++) {
@@ -34,13 +36,20 @@ int main() {
     parseArguments(cmdBuf, &argCount, argArray);
 
     if (strnCmp(argArray[0], "type", 4) == 0 && argCount >= 2) {
-      interrupt(READFILE, argArray[1], buffer);
+      interrupt(READFILE, argArray[1], buffer, &readCount);
       interrupt(PRINTSTRING, buffer, 0, 0);
       interrupt(PRINTSTRING, "\n\r", 0, 0);
     } else if (strnCmp(argArray[0], "execute", 7) == 0 && argCount >= 2) {
       interrupt(EXECUTEPROGRAM, argArray[1], 0x3000);
     } else if (strnCmp(argArray[0], "delete", 6) == 0) {
       interrupt(DELETEFILE, argArray[1], 0, 0);
+    } else if (strnCmp(argArray[0], "copy", 4) == 0 && argCount == 3) {
+      interrupt(READFILE, argArray[1], buffer, &readCount);
+      if (readCount > 0) {
+        interrupt(WRITEFILE, argArray[2], buffer, readCount);
+      } else {
+        interrupt(PRINTSTRING, "FILE NOT FOUND\n\r", 0, 0);
+      }
     } else {
       interrupt(PRINTSTRING, "Invalid Command\n\r", 0, 0);
     }
@@ -82,4 +91,14 @@ void parseArguments(char *args, int *argc, char **argv){
     }
     i++;
   }
+}
+
+int div(int a, int b){
+  int i;
+  i = 0;
+  while (a >= b){
+    a = a - b;
+    i++;
+  }
+  return i;
 }

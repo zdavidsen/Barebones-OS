@@ -3,11 +3,12 @@
 void printString(char* str);
 void readString(char* line);
 void readSector(char* buffer, int sector);
-int readFile(char *name, char *buffer);
+void readFile(char *name, char *buffer, int *readCount);
 void executeProgram(char *name, int segment);
 void terminate();
 void writeSector(char *name, int segment);
 void deleteFile(char *name);
+void writeFile(char *name, char* data, int sectors);
 
 int main() {
   char buffer[13312];
@@ -62,7 +63,7 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     readSector(bx, cx);
     break;
   case 3:
-    readFile(bx, cx);
+    readFile(bx, cx, dx);
     break;
   case 4:
     executeProgram(bx, cx);
@@ -75,6 +76,9 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     break;
   case 7:
     deleteFile(bx);
+    break;
+  case 8:
+    writeFile(bx, cx, dx);
     break;
   default:
     printString(error);
@@ -181,13 +185,19 @@ int strnCmp(char *str1, char *str2, int length) {
   return 0;
 }
 
-int readFile(char *file, char *buffer) {
+void readFile(char *file, char *buffer, int *readCount) {
   
   char error[18];
   char dir[512];
-  int entry, field, comp;
+  int entry, field, comp, trash;
   entry = 0;
   field = 0;
+
+  if (readCount == 0) {
+    readCount = &trash;
+  }
+
+  *readCount = 0;
 
   readSector(dir, 2);
 
@@ -197,11 +207,16 @@ int readFile(char *file, char *buffer) {
       for (field = 6; field < 32; field++) {
         comp = dir[entry * 32 + field];
         if (comp == 0)
-          return 1;
+          return;
         readSector(buffer + 512 * (field - 6), comp);
+        (*readCount)++;
+        if (field == 31) {
+          return;
+        }
       }
     }
   }
+
   error[0] = 'F';
   error[1] = 'i';
   error[2] = 'l';
@@ -221,16 +236,17 @@ int readFile(char *file, char *buffer) {
   error[16] = '\r';
   error[17] = '\0';
   printString(error);
-  return -1;
+  *readCount = -1;
+  return ;
 }
 
 void executeProgram(char *name, int segment) {
   char buffer[13312];
-  int i, result;
+  int i, sectorsRead;
 
-  result = readFile(name, buffer);
+  readFile(name, buffer, &sectorsRead);
 
-  if (result == -1){
+  if (sectorsRead == -1){
     return;
   }
 
@@ -299,4 +315,54 @@ void deleteFile(char *name){
   }
   writeSector(map, 1);
   writeSector(dir, 2);
+}
+
+void writeFile(char *name, char *data, int sectors) {
+  char map[512], dir[512];
+  int i, j, sectorsWritten;
+
+  readSector(dir, 2);
+  readSector(map, 1);
+  /* check amount of free sectors, return if insufficient*/
+  j = 0;
+  for (i = 0; i < 512; i++) {
+    if (map[i] == 0) {
+      j++;
+    }
+  }
+  if (j < sectors) {
+    /* include error message plz*/
+    return;
+  }
+
+  for (i = 0; i < 16; i++) {
+    if (dir[32 * i] == 0) {
+      /* found free sector, write name to directory */
+      for (j = 0; j < 6; j++) {
+        dir[32 * i + j] = name[j];
+        if (name[j] == 0) {
+          for(j = j + 1; j < 6; j++) {
+            dir[32 * i + j] = 0;
+          }
+        }
+      }
+      /* wrote file name, find free sectors, write to dir / map*/
+      sectorsWritten = 0;
+      for (j = 0; j < 512 && sectorsWritten < sectors; j++){
+        if (map[j] == 0) {
+          map[j] = 0xFF;
+          dir[32 * i + 6 + sectorsWritten] = j;
+          writeSector(data + sectorsWritten * 512, j);
+          sectorsWritten++;
+        }
+      }
+      for (j = sectorsWritten + 6; j < 32; j++) {
+        dir[32 * i + j] = 0;
+      }
+      /* */
+      writeSector(map, 1);
+      writeSector(dir, 2);
+      return;
+    }
+  }
 }
