@@ -9,6 +9,7 @@ void terminate();
 void writeSector(char *name, int segment);
 void deleteFile(char *name);
 void writeFile(char *name, char* data, int sectors);
+void clearScreen();
 
 int main() {
   char buffer[13312];
@@ -79,6 +80,9 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     break;
   case 8:
     writeFile(bx, cx, dx);
+    break;
+  case 10:
+    clearScreen();
     break;
   default:
     printString(error);
@@ -365,4 +369,17 @@ void writeFile(char *name, char *data, int sectors) {
       return;
     }
   }
+}
+
+void clearScreen() {
+  int i;
+  char msg[3];
+  msg[0] = '\n';
+  msg[1] = '\r';
+  msg[2] = '\0';
+  for(i = 0; i < 25; i++){
+    printString(msg);
+  }
+  /*interrupt(0x10, 0x0600, 0, 0, 0x194F);*/
+  interrupt(0x10, 0x0200, 0, 0, 0);
 }

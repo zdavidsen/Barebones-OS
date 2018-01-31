@@ -10,7 +10,7 @@
 
 #define printString(string) interrupt(PRINTSTRING, string, 0, 0)
 #define readString(buffer) interrupt(READSTRING, buffer, 0, 0)
-#define readSector(sector) interrupt(READSECTOR, sector, 0, 0)
+#define readSector(buffer, sector) interrupt(READSECTOR, buffer, sector, 0)
 #define readFile(name, buffer, count) interrupt(READFILE, name, buffer, count)
 #define executeProgram(data, sector) interrupt(EXECUTEPROGRAM, data, sector, 0)
 #define terminate() interrupt(TERMINATE, 0, 0, 0)

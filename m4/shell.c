@@ -55,6 +55,8 @@ int main() {
       listDirectory();
     } else if (strnCmp(argArray[0], "create", 6) == 0 && argCount == 2) {
       creatFile(argArray[1]);
+    } else if (strnCmp(argArray[0], "clear", 5) == 0) {
+      interrupt(0x21, 10, 0, 0, 0);
     } else {
       printString("Invalid Command\n\r");
     }
@@ -158,6 +160,7 @@ void listDirectory(){
     line[charsCopied] = '\0';
     printString(line);
   }
+  printString("\n\r");
 }
 
 void creatFile(char *name) {
