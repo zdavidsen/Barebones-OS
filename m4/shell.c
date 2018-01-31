@@ -1,4 +1,4 @@
-/* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/20/18*/
+/* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/31/18*/
 
 #include "./syscall.h"
 
@@ -8,6 +8,7 @@ int strLen(char *str);
 void parseArguments(char *args, int *argc, char **argv);
 void listDirectory();
 void creatFile(char *name);
+void clearScreen();
 
 
 int main() {
@@ -31,10 +32,9 @@ int main() {
     interrupt(PRINTSTRING, "SHELL: ", 0, 0);
     interrupt(READSTRING, cmdBuf, 0, 0);
 
-    
     parseArguments(cmdBuf, &argCount, argArray);
 
-    if (strnCmp(argArray[0], "type", 4) == 0 && argCount >= 2) {
+    if (strnCmp(argArray[0], "type", 5) == 0 && argCount >= 2) {
       readFile(argArray[1], buffer, &readCount);
       if (readCount > 0) {
         printString(buffer);
@@ -42,24 +42,24 @@ int main() {
       } else {
         printString("FILE NOT FOUND\n\r");
       }
-    } else if (strnCmp(argArray[0], "execute", 7) == 0 && argCount >= 2) {
+    } else if (strnCmp(argArray[0], "execute", 8) == 0 && argCount >= 2) {
       executeProgram(argArray[1], 0x3000);
-    } else if (strnCmp(argArray[0], "delete", 6) == 0) {
+    } else if (strnCmp(argArray[0], "delete", 7) == 0) {
       deleteFile(argArray[1]);
-    } else if (strnCmp(argArray[0], "copy", 4) == 0 && argCount == 3) {
+    } else if (strnCmp(argArray[0], "copy", 5) == 0 && argCount == 3) {
       readFile(argArray[1], buffer, &readCount);
       if (readCount > 0) {
         writeFile(argArray[2], buffer, readCount);
       } else {
         printString("FILE NOT FOUND\n\r");
       }
-    } else if (strnCmp(argArray[0], "dir", 3) == 0 && argCount == 1) {
+    } else if (strnCmp(argArray[0], "dir", 4) == 0 && argCount == 1) {
       listDirectory();
-    } else if (strnCmp(argArray[0], "create", 6) == 0 && argCount == 2) {
+    } else if (strnCmp(argArray[0], "create", 7) == 0 && argCount == 2) {
       creatFile(argArray[1]);
-    } else if (strnCmp(argArray[0], "clear", 5) == 0) {
+    } else if (strnCmp(argArray[0], "clear", 6) == 0) {
       clearScreen();
-    } else if (strnCmp(argArray[0], "bgcol", 5) == 0) {
+    } else if (strnCmp(argArray[0], "bgcol", 6) == 0) {
       /* temp hack, cycles background color */
       interrupt(0x10, 0x0b00, ++currCol, 0, 0);
     } else {
@@ -93,7 +93,7 @@ int strnCmp(char *str1, char *str2, int length) {
   return 0;
 }
 
-int strLen(char *str){
+int strLen(char *str) {
   int i;
   i = 0;
   while (str[i] != 0) {
@@ -102,22 +102,21 @@ int strLen(char *str){
   return i;
 }
 
-void parseArguments(char *args, int *argc, char **argv){
+void parseArguments(char *args, int *argc, char **argv) {
   int i, inArg;
   *argc = 0;
   inArg = 0;
 
 
   i = 0;
-  while(args[i] != '\0') {
-    if (args[i] != ' '){
-      if (!inArg){
+  while (args[i] != '\0') {
+    if (args[i] != ' ') {
+      if (!inArg) {
         (argv)[*argc] = args + i;
         (*argc)++;
       }
       inArg = 1;
-    }
-    else if (args[i] == ' '){
+    } else if (args[i] == ' ') {
       inArg = 0;
       args[i] = 0x0;
     }
@@ -125,26 +124,26 @@ void parseArguments(char *args, int *argc, char **argv){
   }
 }
 
-int div(int a, int b){
+int div(int a, int b) {
   int i;
   i = 0;
-  while (a >= b){
+  while (a >= b) {
     a = a - b;
     i++;
   }
   return i;
 }
 
-void listDirectory(){
+void listDirectory() {
   char dir[512], line[20];
   int i, j, count, charsCopied;
-  
+
   strnCpy("FILENAME     SIZE\n\r\0", line, 20);
-  
+
   printString(line);
 
   readSector(dir, 2);
-  for (i = 0; i < 16; i++){
+  for (i = 0; i < 16; i++) {
     count = 0;
     if (dir[32 * i] == 0) {
       continue;
@@ -154,7 +153,7 @@ void listDirectory(){
       line[charsCopied] = ' ';
     }
     j = 6;
-    while (dir[32 * i + j] != 0){
+    while (dir[32 * i + j] != 0) {
       count++;
       j++;
     }
@@ -175,28 +174,18 @@ void creatFile(char *name) {
   readSector(map, 1);
   readSector(dir, 2);
 
-  for (i = 0; i < 13312; i++){
+  for (i = 0; i < 13312; i++) {
     writeBuffer[i] = 0;
   }
   /* find available sectors in map*/
 
-  /*for (i = 0; i < 16; i++){
-    if (dir[32 * i] == 0){
-      strnCpy(name, dir[32 * i], 6);
-      break;
-    }
-  } 
-  if (i == 16){
-    printString("Too many files in system.\n\r");
-    return;
-  } */
   writeIndex = 0;
-  while (1){
+  while (1) {
     readString(line);
     count = strLen(line);
-    
+
     if (count == 0) {
-      /* write buffer to next sector*/ 
+      /* write buffer to next sector*/
       writeFile(name, writeBuffer, div(writeIndex, 512) + 1);
       return;
     }
@@ -208,8 +197,14 @@ void creatFile(char *name) {
       strnCpy(line, writeBuffer + writeIndex, count);
       writeIndex += count;
     }
-
-
   }
-  /* */
+}
+
+void clearScreen() {
+  int i;
+  for (i = 0; i < 25; i++) {
+    printString("\n");
+  }
+  /*interrupt(0x10, 0x0600, 0, 0, 0x194F);*/
+  interrupt(0x10, 0x0200, 0, 0, 0);
 }

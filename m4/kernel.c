@@ -1,4 +1,4 @@
-/* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/20/18*/
+/* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/31/18*/
 
 void printString(char* str);
 void readString(char* line);
@@ -80,9 +80,6 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     break;
   case 8:
     writeFile(bx, cx, dx);
-    break;
-  case 10:
-    clearScreen();
     break;
   default:
     printString(error);
@@ -190,8 +187,6 @@ int strnCmp(char *str1, char *str2, int length) {
 }
 
 void readFile(char *file, char *buffer, int *readCount) {
-  
-  char error[18];
   char dir[512];
   int entry, field, comp, trash;
   entry = 0;
@@ -221,27 +216,8 @@ void readFile(char *file, char *buffer, int *readCount) {
     }
   }
 
-  error[0] = 'F';
-  error[1] = 'i';
-  error[2] = 'l';
-  error[3] = 'e';
-  error[4] = ' ';
-  error[5] = 'n';
-  error[6] = 'o';
-  error[7] = 't';
-  error[8] = ' ';
-  error[9] = 'f';
-  error[10] = 'o';
-  error[11] = 'u';
-  error[12] = 'n';
-  error[13] = 'd';
-  error[14] = '.';
-  error[15] = '\n';
-  error[16] = '\r';
-  error[17] = '\0';
-  //printString(error);
   *readCount = -1;
-  return ;
+  return;
 }
 
 void executeProgram(char *name, int segment) {
@@ -250,7 +226,7 @@ void executeProgram(char *name, int segment) {
 
   readFile(name, buffer, &sectorsRead);
 
-  if (sectorsRead == -1){
+  if (sectorsRead == -1) {
     return;
   }
 
@@ -273,7 +249,7 @@ void terminate() {
   interrupt(0x21, 4, str, 0x2000, 0);
 }
 
-void writeSector(char *name, int segment){
+void writeSector(char *name, int segment) {
   char ah, al, ch, cl, dh, dl;
   int ax, bx, cx, dx;
 
@@ -292,7 +268,7 @@ void writeSector(char *name, int segment){
   interrupt(0x13, ax, bx, cx, dx);
 }
 
-void deleteFile(char *name){
+void deleteFile(char *name) {
   char error[18];
   char dir[512];
   char map[512];
@@ -315,7 +291,6 @@ void deleteFile(char *name){
       dir[entry * 32] = '\0';
       break;
     }
-    
   }
   writeSector(map, 1);
   writeSector(dir, 2);
@@ -345,14 +320,14 @@ void writeFile(char *name, char *data, int sectors) {
       for (j = 0; j < 6; j++) {
         dir[32 * i + j] = name[j];
         if (name[j] == 0) {
-          for(j = j + 1; j < 6; j++) {
+          for (j = j + 1; j < 6; j++) {
             dir[32 * i + j] = 0;
           }
         }
       }
       /* wrote file name, find free sectors, write to dir / map*/
       sectorsWritten = 0;
-      for (j = 0; j < 512 && sectorsWritten < sectors; j++){
+      for (j = 0; j < 512 && sectorsWritten < sectors; j++) {
         if (map[j] == 0) {
           map[j] = 0xFF;
           dir[32 * i + 6 + sectorsWritten] = j;
@@ -369,17 +344,4 @@ void writeFile(char *name, char *data, int sectors) {
       return;
     }
   }
-}
-
-void clearScreen() {
-  int i;
-  char msg[3];
-  msg[0] = '\n';
-  msg[1] = '\r';
-  msg[2] = '\0';
-  for(i = 0; i < 25; i++){
-    printString(msg);
-  }
-  /*interrupt(0x10, 0x0600, 0, 0, 0x194F);*/
-  interrupt(0x10, 0x0200, 0, 0, 0);
 }
