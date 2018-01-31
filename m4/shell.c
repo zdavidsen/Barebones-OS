@@ -17,6 +17,8 @@ int main() {
   int argCount;
   char *argArray[5];
   int readCount;
+  unsigned char currCol;
+  currCol = 0;
 
   while (1) {
     for (i = 0; i < 80; i++) {
@@ -56,7 +58,10 @@ int main() {
     } else if (strnCmp(argArray[0], "create", 6) == 0 && argCount == 2) {
       creatFile(argArray[1]);
     } else if (strnCmp(argArray[0], "clear", 5) == 0) {
-      interrupt(0x21, 10, 0, 0, 0);
+      clearScreen();
+    } else if (strnCmp(argArray[0], "bgcol", 5) == 0) {
+      /* temp hack, cycles background color */
+      interrupt(0x10, 0x0b00, ++currCol, 0, 0);
     } else {
       printString("Invalid Command\n\r");
     }

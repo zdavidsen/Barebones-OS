@@ -8,6 +8,8 @@
 #define DELETEFILE 0x21, 7
 #define WRITEFILE 0x21, 8
 
+#define CLRSCREEN 0x21, 10
+
 #define printString(string) interrupt(PRINTSTRING, string, 0, 0)
 #define readString(buffer) interrupt(READSTRING, buffer, 0, 0)
 #define readSector(buffer, sector) interrupt(READSECTOR, buffer, sector, 0)
@@ -17,3 +19,5 @@
 #define writeSector(data, sector) interrupt(WRITESECTOR, data, sector, 0)
 #define deleteFile(name) interrupt(DELETEFILE, name, 0, 0)
 #define writeFile(name, data, numSectors) interrupt(WRITEFILE, name, data, numSectors)
+
+#define clearScreen() interrupt(CLRSCREEN, 0, 0, 0)
