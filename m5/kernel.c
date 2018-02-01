@@ -157,7 +157,7 @@ void printString(char *str) {
       break;
     ah = 0xE;
     ax = ah * 256 + al;
-    interrupt(0x10, ax, 0, 0, 0);
+    interrupt(0x10, ax, 0x07, 0, 0);
   }
 }
 
@@ -192,7 +192,7 @@ void readString(char *line) {
       line[i] = temp;
       i++;
       ax = 0xE * 256 + temp;
-      interrupt(0x10, ax, 0, 0, 0);
+      interrupt(0x10, ax, 0x07, 0, 0);
     }
   }
 }
