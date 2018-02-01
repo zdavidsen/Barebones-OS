@@ -9,7 +9,7 @@ void parseArguments(char *args, int *argc, char **argv);
 void listDirectory();
 void creatFile(char *name);
 void clearScreen();
-
+void drawStuff();
 
 int main() {
   char cmdBuf[80];
@@ -64,6 +64,12 @@ int main() {
     } else if (strnCmp(argArray[0], "bgcol", 6) == 0) {
       /* temp hack, cycles background color */
       interrupt(0x10, 0x0b00, ++currCol, 0, 0);
+    } else if (strnCmp(argArray[0], "pg2", 4) == 0) {
+      interrupt(0x10, 0x0501, 0x80);
+    } else if (strnCmp(argArray[0], "pg1", 4) == 0) {
+      interrupt(0x10, 0x0500, 0x80);
+    } else if (strnCmp(argArray[0], "draw", 5) == 0) {
+      drawStuff();
     } else {
       printString("Invalid Command\n\r");
     }
@@ -209,4 +215,73 @@ void clearScreen() {
   }
   /*interrupt(0x10, 0x0600, 0, 0, 0x194F);*/
   interrupt(0x10, 0x0200, 0, 0, 0);
+}
+
+void drawStuff() {
+  int temp, x, y, size, i, j;
+  char color;
+  x = 0; y = 0; size = 4;
+  color = 1;
+  interrupt(0x10, 0x000D, 0, 0, 0);
+  while (1) {
+    temp = interrupt(0x16, 0, 0, 0, 0);
+    switch (temp) {
+    case 0x1b:
+      goto end;
+    case 'k':
+      y += size;
+      if (y > 199) y = 199;
+      break;
+    case 'j':
+      x -= size;
+      if (x < 0) x = 0;
+      break;
+    case 'i':
+      y -= size;
+      if (y < 0) y = 0;
+      break;
+    case 'l':
+      x += size;
+      if (x > 319) x = 319;
+      break;
+    case '1':
+    case '2':
+    case '3':
+    case '4':
+    case '5':
+    case '6':
+    case '7':
+    case '8':
+    case '9':
+    case '0':
+      color = temp - 0x30;
+      break;
+    case 'a':
+    case 'b':
+    case 'c':
+    case 'd':
+    case 'e':
+    case 'f':
+      color = temp - 0x61 + 10;
+      break;
+    case '-':
+      size >>= 1;
+      if (size < 1) size = 1;
+      break;
+    case '=':
+      size <<= 1;
+      if (size > 8) size = 8;
+      break;
+    case ' ':
+      for (i = 0; i < size && x + i < 320; i++) {
+        for (j = 0; j < size && y + j < 200; j++) {
+          interrupt(0x10, 0x0c00 + color, 0, x + i, y + j);
+        }
+      }
+      break;
+    default: break;
+    }
+  }
+end:
+  interrupt(0x10, 0x0003, 0, 0, 0);
 }

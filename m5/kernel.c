@@ -24,6 +24,8 @@ pStructs ptable[8];
 int main() {
   int i;
   makeInterrupt21();
+
+  //printhex(interrupt(0x10, 0x1200, 0x84));
   
   currentProcess = 0;
   for (i = 0; i < 8; i++) {
@@ -164,35 +166,35 @@ void readString(char *line) {
   int ax, i;
   i = 0;
   while (1) {
-  ax = 0;
-  temp = interrupt(0x16, ax, 0, 0, 0);
-  if (temp == 0xd) {
-    line[i] = 0;
-    /* line[i] = 0xa;
-    line[i+1] = 0xd;
-    line[i+2] = 0x0; */
-    ax = 0xE * 256 + 0xa;
-    interrupt(0x10, ax, 0, 0, 0);
-    ax = 0xE * 256 + 0xd;
-    interrupt(0x10, ax, 0, 0, 0);
-    return;
-  } else if (temp == 0x8) {
-    if ( i > 0 ) {
-      i--;
-      ax = 0xE * 256 + 0x8;
+    ax = 0;
+    temp = interrupt(0x16, ax, 0, 0, 0);
+    if (temp == 0xd) {
+      line[i] = 0;
+      /* line[i] = 0xa;
+      line[i+1] = 0xd;
+      line[i+2] = 0x0; */
+      ax = 0xE * 256 + 0xa;
       interrupt(0x10, ax, 0, 0, 0);
-      ax = 0xE * 256 + ' ';
+      ax = 0xE * 256 + 0xd;
       interrupt(0x10, ax, 0, 0, 0);
-      ax = 0xE * 256 + 0x8;
+      return;
+    } else if (temp == 0x8) {
+      if ( i > 0 ) {
+        i--;
+        ax = 0xE * 256 + 0x8;
+        interrupt(0x10, ax, 0, 0, 0);
+        ax = 0xE * 256 + ' ';
+        interrupt(0x10, ax, 0, 0, 0);
+        ax = 0xE * 256 + 0x8;
+        interrupt(0x10, ax, 0, 0, 0);
+      }
+    } else {
+      line[i] = temp;
+      i++;
+      ax = 0xE * 256 + temp;
       interrupt(0x10, ax, 0, 0, 0);
     }
-  } else {
-    line[i] = temp;
-    i++;
-    ax = 0xE * 256 + temp;
-    interrupt(0x10, ax, 0, 0, 0);
   }
-}
 }
 
 void readSector(char *buffer, int sector) {
