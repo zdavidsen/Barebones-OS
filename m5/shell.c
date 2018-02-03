@@ -1,6 +1,7 @@
 /* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/31/18*/
 
 #include "./syscall.h"
+#include "./keycode.h"
 
 int strnCmp(char *str1, char *str2, int length);
 int strnCpy(char *src, char *dest, int length);
@@ -63,7 +64,7 @@ int main() {
     } else if (strnCmp(argArray[0], "clear", 6) == 0) {
       clearScreen();
     } else if (strnCmp(argArray[0], "bgcol", 6) == 0) {
-      /* temp hack, cycles background color */
+      /* keycode hack, cycles background color */
       interrupt(0x10, 0x0b00, ++currCol, 0, 0);
     } else if (strnCmp(argArray[0], "pg2", 4) == 0) {
       interrupt(0x10, 0x0501, 0x80);
@@ -76,7 +77,7 @@ int main() {
     } else if (strnCmp(argArray[0], "execforeground", 15) == 0) {
       executeProgram(argArray[1], &pid);
       blockProcess(pid);
-    }else {
+    } else {
       printString("Invalid Command\n\r");
     }
   }
@@ -219,7 +220,6 @@ void clearScreen() {
   for (i = 0; i < 25; i++) {
     printString("\n");
   }
-  /*interrupt(0x10, 0x0600, 0, 0, 0x194F);*/
   interrupt(0x10, 0x0200, 0, 0, 0);
 }
 
@@ -227,61 +227,67 @@ void clearScreen() {
 #define HEIGHT 200
 
 void drawStuff() {
-  int temp, x, y, size, i, j;
+  int keycode, x, y, size, i, j;
   char color;
   x = 0; y = 0; size = 4;
   color = 1;
+  //change video mode to graphics
   interrupt(0x10, 0x000E, 0, 0, 0);
   while (1) {
-    temp = interrupt(0x16, 0, 0, 0, 0);
-    switch (temp) {
-    case 0x1b:
+    getKeypress(&keycode);
+    
+    switch (keycode) {
+    case KEY_ESCAPE:
       goto end;
-    case 'k':
-      y += size;
-      if (y > HEIGHT - size) y = HEIGHT - size;
-      break;
-    case 'j':
-      x -= size * 2;
-      if (x < 0) x = 0;
-      break;
-    case 'i':
+    case KEY_I:
+    case KEY_ARROW_UP: //up arrow
       y -= size;
       if (y < 0) y = 0;
       break;
-    case 'l':
+    case KEY_K:
+    case KEY_ARROW_DOWN: //down arrow
+      y += size;
+      if (y > HEIGHT - size) y = HEIGHT - size;
+      break;
+    case KEY_J:
+    case KEY_ARROW_LEFT: //left arrow
+      x -= size * 2;
+      if (x < 0) x = 0;
+      break;
+    case KEY_L:
+    case KEY_ARROW_RIGHT: //right arrow
       x += size * 2;
       if (x > WIDTH - size * 2) x = WIDTH - size * 2;
       break;
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
-    case '0':
-      color = temp - 0x30;
+    case KEY_1: case KEY_KP_1:
+    case KEY_2: case KEY_KP_2:
+    case KEY_3: case KEY_KP_3:
+    case KEY_4: case KEY_KP_4:
+    case KEY_5: case KEY_KP_5:
+    case KEY_6: case KEY_KP_6:
+    case KEY_7: case KEY_KP_7:
+    case KEY_8: case KEY_KP_8:
+    case KEY_9: case KEY_KP_9:
+    case KEY_0: case KEY_KP_0:
+      color = KEYCODE_TO_ASCII(keycode) - 0x30;
       break;
-    case 'a':
-    case 'b':
-    case 'c':
-    case 'd':
-    case 'e':
-    case 'f':
-      color = temp - 0x61 + 10;
+    case KEY_A:
+    case KEY_B:
+    case KEY_C:
+    case KEY_D:
+    case KEY_E:
+    case KEY_F:
+      color = keycode - 0x61 + 10;
       break;
-    case '-':
+    case KEY_MINUS: case KEY_KP_MINUS:
       size >>= 1;
       if (size < 1) size = 1;
       break;
-    case '=':
+    case KEY_EQUAL: case KEY_KP_PLUS:
       size <<= 1;
       if (size > 8) size = 8;
       break;
-    case ' ':
+    case KEY_SPACE:
       for (i = 0; i < size * 2 && x + i < WIDTH; i++) {
         for (j = 0; j < size && y + j < HEIGHT; j++) {
           interrupt(0x10, 0x0c00 + color, 0, x + i, y + j);
@@ -292,6 +298,6 @@ void drawStuff() {
     }
   }
 end:
-  //return;
+  //change video mode to text
   interrupt(0x10, 0x0003, 0, 0, 0);
 }

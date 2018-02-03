@@ -12,7 +12,7 @@ void writeFile(char *name, char* data, int sectors);
 void clearScreen();
 void killProcess(int pid);
 void blockProcess(int blocking_pid);
-
+int getKeypress();
 
 typedef struct pstruct {
   int active;
@@ -40,7 +40,7 @@ int main() {
 
   makeTimerInterrupt();
 
-  interrupt(0x21, 4, "shell", 0x2000, 0);
+  executeProgram("shell", 0);
 
   while (1)
     continue;
@@ -107,6 +107,9 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
   case 10:
     blockProcess(bx);
     break;
+  case 11:
+    *(int*)bx = getKeypress();
+    break;
   default:
     printString(error);
   }
@@ -114,10 +117,6 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
 
 void handleTimerInterrupt(int segment, int sp) {
   int i, newSeg, newSp;
-  char msg[3];
-  msg[0] = '\n';
-  msg[1] = '\r';
-  msg[2] = 0;
   newSp = sp;
   newSeg = div(segment, 0x1000) - 2;
   
@@ -177,7 +176,7 @@ void readString(char *line) {
   int ax, i;
   i = 0;
   while (1) {
-    temp = interrupt(0x16, 0x0000, 0, 0, 0);
+    temp = getKeypress();
     //printhex(temp);
     if (temp == 0xd) {
       line[i] = 0;
@@ -209,7 +208,7 @@ void readString(char *line) {
 }
 
 int getKeypress() {
-  return interrupt(0x16, 0x0000, 0, 0, 0);
+  return interruptwah(0x16, 0x0000, 0, 0, 0);
 }
 
 void readSector(char *buffer, int sector) {

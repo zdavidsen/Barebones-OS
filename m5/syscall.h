@@ -23,5 +23,6 @@
 #define writeFile(name, data, numSectors) interrupt(WRITEFILE, name, data, numSectors)
 #define killProcess(pid) interrupt(0x21, 9, pid, 0, 0)
 #define blockProcess(blocking_pid) interrupt(0x21, 10, blocking_pid, 0, 0)
+#define getKeypress(keycode) interrupt(0x21, 11, keycode, 0, 0)
 
 #endif /* M4_SYSCALL_H_ */
