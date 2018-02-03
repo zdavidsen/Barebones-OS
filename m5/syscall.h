@@ -16,10 +16,12 @@
 #define readString(buffer) interrupt(READSTRING, buffer, 0, 0)
 #define readSector(buffer, sector) interrupt(READSECTOR, buffer, sector, 0)
 #define readFile(name, buffer, count) interrupt(READFILE, name, buffer, count)
-#define executeProgram(data, sector) interrupt(EXECUTEPROGRAM, data, sector, 0)
+#define executeProgram(data, pid) interrupt(EXECUTEPROGRAM, data, pid, 0)
 #define terminate() interrupt(TERMINATE, 0, 0, 0)
 #define writeSector(data, sector) interrupt(WRITESECTOR, data, sector, 0)
 #define deleteFile(name) interrupt(DELETEFILE, name, 0, 0)
 #define writeFile(name, data, numSectors) interrupt(WRITEFILE, name, data, numSectors)
+#define killProcess(pid) interrupt(0x21, 9, pid, 0, 0)
+#define blockProcess(blocking_pid) interrupt(0x21, 10, blocking_pid, 0, 0)
 
 #endif /* M4_SYSCALL_H_ */

@@ -4,16 +4,20 @@ void printString(char* str);
 void readString(char* line);
 void readSector(char* buffer, int sector);
 void readFile(char *name, char *buffer, int *readCount);
-void executeProgram(char *name);
+void executeProgram(char *name, int* pid);
 void terminate();
 void writeSector(char *name, int segment);
 void deleteFile(char *name);
 void writeFile(char *name, char* data, int sectors);
 void clearScreen();
+void killProcess(int pid);
+void blockProcess(int blocking_pid);
+
 
 typedef struct pstruct {
   int active;
   int sp;
+  int wait_id;
 }pStructs;
 
 int currentProcess;
@@ -31,6 +35,7 @@ int main() {
   for (i = 0; i < 8; i++) {
     ptable[i].active = 0;
     ptable[i].sp = 0xff00;
+    ptable[i].wait_id = -1;
   }
 
   makeTimerInterrupt();
@@ -82,7 +87,7 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     readFile(bx, cx, dx);
     break;
   case 4:
-    executeProgram(bx);
+    executeProgram(bx, cx);
     break;
   case 5:
     terminate();
@@ -95,6 +100,12 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     break;
   case 8:
     writeFile(bx, cx, dx);
+    break;
+  case 9:
+    killProcess(bx);
+    break;
+  case 10:
+    blockProcess(bx);
     break;
   default:
     printString(error);
@@ -263,8 +274,8 @@ void readFile(char *file, char *buffer, int *readCount) {
   *readCount = -1;
   return;
 }
-
-void executeProgram(char *name) {
+  int waiting;
+void executeProgram(char *name, int* pid) {
   char buffer[13312];
   int i, sectorsRead, segment, procIndex;
 
@@ -300,19 +311,23 @@ void executeProgram(char *name) {
   ptable[procIndex].sp = 0xff00;
   ptable[procIndex].active = 1;
   restoreDataSegment();
+  if (pid != 0) {
+    *pid = procIndex;
+  }
 }
 
 void terminate() {
-  char str[6];
-  str[0] = 's';
-  str[1] = 'h';
-  str[2] = 'e';
-  str[3] = 'l';
-  str[4] = 'l';
-  str[5] = '\0';
+  int i;
 
   /* interrupt(0x21, 4, str, 0x2000, 0); */
   setKernelDataSegment();
+  for (i = 0; i < 8; i++) {
+    if (ptable[i].wait_id == currentProcess) {
+      ptable[i].wait_id = -1;
+      ptable[i].active = 1;
+    }
+  }
+
 
   ptable[currentProcess].active = 0;
 
@@ -320,6 +335,34 @@ void terminate() {
 
   while (1);
 
+}
+
+void killProcess(int pid) {
+  int temp;
+  temp = pid;
+  setKernelDataSegment();
+  if (temp <= 0 || temp > 7) {
+    printString("Incorrect process ID.\n\r");
+    restoreDataSegment();
+    return;
+  }
+
+  ptable[temp].active = 0;
+
+  restoreDataSegment();
+}
+
+void blockProcess(int blocking_pid) {
+  int temp, temp_id;
+  temp = blocking_pid;
+  setKernelDataSegment();
+  temp_id = currentProcess;
+  ptable[currentProcess].wait_id = temp;
+  ptable[currentProcess].active = 2;
+  while (ptable[temp_id].active == 2) {
+    continue;
+  }
+  restoreDataSegment();
 }
 
 void writeSector(char *name, int segment) {
