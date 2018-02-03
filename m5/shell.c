@@ -19,6 +19,7 @@ int main() {
   char *argArray[5];
   int readCount;
   unsigned char currCol;
+  int pid;
   currCol = 0;
 
   enableInterrupts();
@@ -45,7 +46,7 @@ int main() {
         printString("FILE NOT FOUND\n\r");
       }
     } else if (strnCmp(argArray[0], "execute", 8) == 0 && argCount >= 2) {
-      executeProgram(argArray[1], 0x3000);
+      executeProgram(argArray[1], 0);
     } else if (strnCmp(argArray[0], "delete", 7) == 0) {
       deleteFile(argArray[1]);
     } else if (strnCmp(argArray[0], "copy", 5) == 0 && argCount == 3) {
@@ -70,7 +71,12 @@ int main() {
       interrupt(0x10, 0x0500, 0x80);
     } else if (strnCmp(argArray[0], "draw", 5) == 0) {
       drawStuff();
-    } else {
+    } else if (strnCmp(argArray[0], "kill", 5) == 0) {
+      killProcess(argArray[1][0] - 0x30);
+    } else if (strnCmp(argArray[0], "execforeground", 15) == 0) {
+      executeProgram(argArray[1], &pid);
+      blockProcess(pid);
+    }else {
       printString("Invalid Command\n\r");
     }
   }
