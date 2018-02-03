@@ -25,7 +25,7 @@ int main() {
   int i;
   makeInterrupt21();
 
-  //printhex(interrupt(0x10, 0x1200, 0x84));
+  //printhex(interrupt(0x16, 0x0900, 0, 0, 0));
   
   currentProcess = 0;
   for (i = 0; i < 8; i++) {
@@ -166,8 +166,8 @@ void readString(char *line) {
   int ax, i;
   i = 0;
   while (1) {
-    ax = 0;
-    temp = interrupt(0x16, ax, 0, 0, 0);
+    temp = interruptwah(0x16, 0x0000, 0, 0, 0);
+    //printhex(temp);
     if (temp == 0xd) {
       line[i] = 0;
       /* line[i] = 0xa;

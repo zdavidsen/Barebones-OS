@@ -217,12 +217,15 @@ void clearScreen() {
   interrupt(0x10, 0x0200, 0, 0, 0);
 }
 
+#define WIDTH 640
+#define HEIGHT 200
+
 void drawStuff() {
   int temp, x, y, size, i, j;
   char color;
   x = 0; y = 0; size = 4;
   color = 1;
-  interrupt(0x10, 0x000D, 0, 0, 0);
+  interrupt(0x10, 0x000E, 0, 0, 0);
   while (1) {
     temp = interrupt(0x16, 0, 0, 0, 0);
     switch (temp) {
@@ -230,10 +233,10 @@ void drawStuff() {
       goto end;
     case 'k':
       y += size;
-      if (y > 199) y = 199;
+      if (y > HEIGHT - size) y = HEIGHT - size;
       break;
     case 'j':
-      x -= size;
+      x -= size * 2;
       if (x < 0) x = 0;
       break;
     case 'i':
@@ -241,8 +244,8 @@ void drawStuff() {
       if (y < 0) y = 0;
       break;
     case 'l':
-      x += size;
-      if (x > 319) x = 319;
+      x += size * 2;
+      if (x > WIDTH - size * 2) x = WIDTH - size * 2;
       break;
     case '1':
     case '2':
@@ -273,8 +276,8 @@ void drawStuff() {
       if (size > 8) size = 8;
       break;
     case ' ':
-      for (i = 0; i < size && x + i < 320; i++) {
-        for (j = 0; j < size && y + j < 200; j++) {
+      for (i = 0; i < size * 2 && x + i < WIDTH; i++) {
+        for (j = 0; j < size && y + j < HEIGHT; j++) {
           interrupt(0x10, 0x0c00 + color, 0, x + i, y + j);
         }
       }
@@ -283,5 +286,6 @@ void drawStuff() {
     }
   }
 end:
+  //return;
   interrupt(0x10, 0x0003, 0, 0, 0);
 }
