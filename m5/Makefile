@@ -16,8 +16,8 @@ floppya.img:: loadFile shell
 	./loadFile shell
 	./loadFile phello
 	#force bootload and kernel to be written to disk
-	[ ! -e bootload ] || touch bootload
-	[ ! -e kernel ] || touch kernel
+	[ ! -e bootload ] || touch bootload.asm
+	[ ! -e kernel ] || touch kernel.c
 
 loadFile: loadFile.c
 	gcc loadFile.c -o loadFile

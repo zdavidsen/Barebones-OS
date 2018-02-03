@@ -166,7 +166,7 @@ void readString(char *line) {
   int ax, i;
   i = 0;
   while (1) {
-    temp = interruptwah(0x16, 0x0000, 0, 0, 0);
+    temp = interrupt(0x16, 0x0000, 0, 0, 0);
     //printhex(temp);
     if (temp == 0xd) {
       line[i] = 0;
@@ -195,6 +195,10 @@ void readString(char *line) {
       interrupt(0x10, ax, 0x07, 0, 0);
     }
   }
+}
+
+int getKeypress() {
+  return interrupt(0x16, 0x0000, 0, 0, 0);
 }
 
 void readSector(char *buffer, int sector) {
