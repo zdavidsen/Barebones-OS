@@ -1,6 +1,7 @@
 /* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/31/18*/
 
-#include "paramPass.h"
+#include "./paramPass.h"
+#include "./helpers.h"
 
 void printString(char* str);
 void readString(char* line);
@@ -56,6 +57,7 @@ int main() {
   return 0;
 }
 
+/* Syscalls */
 void handleInterrupt21(int ax, int bx, int cx, int dx) {
   Params defaultParams;
   char error[22];
@@ -130,6 +132,7 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
   }
 }
 
+/* Scheduler */
 void handleTimerInterrupt(int segment, int sp) {
   int i, newSeg, newSp;
   newSp = sp;
@@ -155,6 +158,7 @@ void handleTimerInterrupt(int segment, int sp) {
   returnFromTimer((newSeg + 2) * 0x1000, newSp);
 }
 
+/* Process Management functions */
 void executeProgram(char *name, int* pid, Params *params) {
   char buffer[13312];
   char *temp;
@@ -190,6 +194,7 @@ void executeProgram(char *name, int* pid, Params *params) {
   initializeProgram(segment);
   /* Initialize arguments */
   putInMemory(segment, 0xff1a, params->argc);
+  putInMemory(segment, 0xff1b, params->argc >> 8);
 
   sectorsRead = 0xff1e + params->argc * 2;
   putInMemory(segment, 0xff1c, 0x1e);
@@ -198,11 +203,18 @@ void executeProgram(char *name, int* pid, Params *params) {
     temp = params->argv[i];
     putInMemory(segment, 0xff1e + i*2, sectorsRead);
     putInMemory(segment, 0xff1f + i*2, sectorsRead >> 8);
-    for (j = 0; ; j++) {
+    for (j = 0; sectorsRead < 0xffff; j++) {
       putInMemory(segment, sectorsRead, temp[j]);
       sectorsRead++;
       if (temp[j] == 0) break;
     }
+  }
+
+  if (sectorsRead == 0xfffe) {
+    putInMemory(segment, 0xffff, 0);
+    setKernelDataSegment();
+    printString("Ran out of memory for ARGV!!\n\r");
+    restoreDataSegment();
   }
   /* end argument initialization */
   
@@ -264,6 +276,7 @@ void blockProcess(int blocking_pid) {
   restoreDataSegment();
 }
 
+/* Kernel provided helper functions */
 void printString(char *str) {
   char al, ah;
   int ax, i;
@@ -468,33 +481,33 @@ void writeFile(char *name, char *data, int sectors) {
   }
 }
 
-int strnCmp(char *str1, char *str2, int length) {
-  int i, ret;
+// int strnCmp(char *str1, char *str2, int length) {
+//   int i, ret;
 
-  for (i = 0; i < length; i++) {
-    ret = str1[i] - str2[i];
-    if (ret != 0)
-      return ret;
+//   for (i = 0; i < length; i++) {
+//     ret = str1[i] - str2[i];
+//     if (ret != 0)
+//       return ret;
 
-    if (str1[i] == 0)
-      return 0;
-  }
-  return 0;
-}
+//     if (str1[i] == 0)
+//       return 0;
+//   }
+//   return 0;
+// }
 
-int div(int a, int b) {
-  int count;
-  count = 0;
-  while (a >= b) {
-    a = a-b;
-    count++;
-  }
-  return count;
-}
+// int div(int a, int b) {
+//   int count;
+//   count = 0;
+//   while (a >= b) {
+//     a = a-b;
+//     count++;
+//   }
+//   return count;
+// }
 
-int mod(int a, int b) {
-  while (a >= b) {
-    a = a-b;
-  }
-  return a;
-}
+// int mod(int a, int b) {
+//   while (a >= b) {
+//     a = a-b;
+//   }
+//   return a;
+// }

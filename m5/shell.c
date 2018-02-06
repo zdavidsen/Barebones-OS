@@ -3,16 +3,13 @@
 #include "./syscall.h"
 #include "./keycode.h"
 #include "./paramPass.h"
+#include "./helpers.h"
 
-int strnCmp(char *str1, char *str2, int length);
-int strnCpy(char *src, char *dest, int length);
-int strLen(char *str);
 void parseArguments(char *args, int *argc, char **argv);
 void listDirectory();
 void creatFile(char *name);
 void clearScreen();
 void drawStuff();
-int asciiToInt(char *num);
 
 int main(int argc, char *argv[]) {
   char cmdBuf[80];
@@ -88,40 +85,6 @@ int main(int argc, char *argv[]) {
   }
 }
 
-int strnCpy(char *src, char *dest, int length) {
-  int i;
-  for (i = 0; i < length; i++) {
-    if (src[i] == 0) {
-      break;
-    }
-    dest[i] = src[i];
-  }
-  return i;
-}
-
-int strnCmp(char *str1, char *str2, int length) {
-  int i, ret;
-
-  for (i = 0; i < length; i++) {
-    ret = str1[i] - str2[i];
-    if (ret != 0)
-      return ret;
-
-    if (str1[i] == 0)
-      return 0;
-  }
-  return 0;
-}
-
-int strLen(char *str) {
-  int i;
-  i = 0;
-  while (str[i] != 0) {
-    i++;
-  }
-  return i;
-}
-
 void parseArguments(char *args, int *argc, char **argv) {
   int i, inArg;
   *argc = 0;
@@ -144,16 +107,6 @@ void parseArguments(char *args, int *argc, char **argv) {
   }
 }
 
-int div(int a, int b) {
-  int i;
-  i = 0;
-  while (a >= b) {
-    a = a - b;
-    i++;
-  }
-  return i;
-}
-
 void listDirectory() {
   char dir[512], line[20];
   int i, j, count, charsCopied;
@@ -169,6 +122,7 @@ void listDirectory() {
       continue;
     }
     charsCopied = strnCpy(dir + 32 * i, line, 6);
+    if (line[charsCopied - 1] == 0) charsCopied--;
     for (; charsCopied < 13; charsCopied++) {
       line[charsCopied] = ' ';
     }
@@ -221,11 +175,11 @@ void creatFile(char *name) {
 }
 
 void clearScreen() {
-  int i;
-  for (i = 0; i < 25; i++) {
-    printString("\n");
-  }
-  interrupt(0x10, 0x0200, 0, 0, 0);
+  // int i;
+  // for (i = 0; i < 25; i++) {
+  //   printString("\n");
+  // }
+  interrupt(0x10, 0x0003, 0, 0, 0);
 }
 
 #define WIDTH 640
@@ -336,17 +290,4 @@ void printhex(int a) {
 
   arr[4] = 0;
   printString(arr);
-}
-
-int asciiToInt(char *num) {
-  if (num[0] > 0x29 && num[0] < 0x40) {
-    return num[0] - 0x30;
-  }
-  if (num[0] > 0x40 && num[0] < 0x47) {
-    return num[0] - 0x41 + 10;
-  }
-  if (num[0] > 0x60 && num[0] < 0x67) {
-    return num[0] - 0x61 + 10;
-  }
-  return 0;
 }

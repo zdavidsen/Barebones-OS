@@ -17,8 +17,8 @@ floppya.img:: loadFile shell printargs
 	./loadFile phello
 	./loadFile printargs
 	#force bootload and kernel to be written to disk
-	touch bootload.asm
-	touch kernel.c
+	if [ -e bootload ]; then touch bootload; fi
+	if [ -e kernel ]; then touch kernel; fi
 
 loadFile: loadFile.c
 	gcc loadFile.c -o loadFile
@@ -29,9 +29,9 @@ bootload: bootload.asm
 floppya.img:: bootload
 	dd if=bootload of=floppya.img bs=512 count=1 conv=notrunc
 
-kernel: kernel.c kernel_asm.o paramPass.h
+kernel: kernel.c kernel_asm.o paramPass.h helpers.o
 	$(CC) $(CFLAGS) -o kernel.o kernel.c
-	$(LD) -o kernel -d kernel.o kernel_asm.o
+	$(LD) -o kernel -d kernel.o kernel_asm.o helpers.o
 
 kernel_asm.o: kernel.asm
 	$(AS) kernel.asm -o kernel_asm.o
@@ -39,9 +39,12 @@ kernel_asm.o: kernel.asm
 floppya.img:: kernel
 	dd if=kernel of=floppya.img bs=512 conv=notrunc seek=3
 
-shell: shell.c syscall.h lib.o keycode.h paramPass.h
+shell: shell.c lib.o syscall.h keycode.h paramPass.h helpers.o
 	$(CC) $(CFLAGS) -o shell.o shell.c
-	$(LD) -o shell -d shell.o lib.o
+	$(LD) -o shell -d shell.o lib.o helpers.o
+
+helpers.o: helpers.c helpers.h
+	$(CC) $(CFLAGS) -o helpers.o helpers.c
 
 lib.o: lib.asm
 	$(AS) lib.asm -o lib.o
