@@ -2,6 +2,7 @@
 
 #include "./syscall.h"
 #include "./keycode.h"
+#include "./paramPass.h"
 
 int strnCmp(char *str1, char *str2, int length);
 int strnCpy(char *src, char *dest, int length);
@@ -11,17 +12,17 @@ void listDirectory();
 void creatFile(char *name);
 void clearScreen();
 void drawStuff();
+int asciiToInt(char *num);
 
-int main() {
+int main(int argc, char *argv[]) {
   char cmdBuf[80];
   int i;
   char buffer[13312];
   int argCount;
-  char *argArray[5];
+  char *argArray[10];
   int readCount;
-  unsigned char currCol;
   int pid;
-  currCol = 0;
+  Params params;
 
   enableInterrupts();
   while (1) {
@@ -47,7 +48,9 @@ int main() {
         printString("FILE NOT FOUND\n\r");
       }
     } else if (strnCmp(argArray[0], "execute", 8) == 0 && argCount >= 2) {
-      executeProgram(argArray[1], 0);
+      params.argc = argCount - 1;
+      params.argv = argArray + 1;
+      executeProgram(argArray[1], 0, &params);
     } else if (strnCmp(argArray[0], "delete", 7) == 0) {
       deleteFile(argArray[1]);
     } else if (strnCmp(argArray[0], "copy", 5) == 0 && argCount == 3) {
@@ -63,9 +66,9 @@ int main() {
       creatFile(argArray[1]);
     } else if (strnCmp(argArray[0], "clear", 6) == 0) {
       clearScreen();
-    } else if (strnCmp(argArray[0], "bgcol", 6) == 0) {
+    } else if (strnCmp(argArray[0], "bgcol", 6) == 0 && argCount >= 2) {
       /* keycode hack, cycles background color */
-      interrupt(0x10, 0x0b00, ++currCol, 0, 0);
+      interrupt(0x10, 0x0b00, asciiToInt(argArray[1]), 0, 0);
     } else if (strnCmp(argArray[0], "pg2", 4) == 0) {
       interrupt(0x10, 0x0501, 0x80);
     } else if (strnCmp(argArray[0], "pg1", 4) == 0) {
@@ -75,7 +78,9 @@ int main() {
     } else if (strnCmp(argArray[0], "kill", 5) == 0) {
       killProcess(argArray[1][0] - 0x30);
     } else if (strnCmp(argArray[0], "execforeground", 15) == 0) {
-      executeProgram(argArray[1], &pid);
+      params.argc = argCount - 1;
+      params.argv = argArray + 1;
+      executeProgram(argArray[1], &pid, &params);
       blockProcess(pid);
     } else {
       printString("Invalid Command\n\r");
@@ -300,4 +305,48 @@ void drawStuff() {
 end:
   //change video mode to text
   interrupt(0x10, 0x0003, 0, 0, 0);
+}
+
+void printhex(int a) {
+  char arr[5];
+  int temp;
+  temp = (a & 0xf000) >> 12;
+  if(temp > 9) {
+    temp = temp - 9 + 0x10;
+  }
+  arr[0] = 0x30 + temp;
+
+  temp = (a & 0xf00) >> 8;
+  if(temp > 9) {
+    temp = temp - 9 + 0x10;
+  }
+  arr[1] = 0x30 + temp;
+
+  temp = (a & 0xf0) >> 4;
+  if(temp > 9) {
+    temp = temp - 9 + 0x10;
+  }
+  arr[2] = 0x30 + temp;
+
+  temp = (a & 0xf);
+  if(temp > 9) {
+    temp = temp - 9 + 0x10;
+  }
+  arr[3] = 0x30 + temp;
+
+  arr[4] = 0;
+  printString(arr);
+}
+
+int asciiToInt(char *num) {
+  if (num[0] > 0x29 && num[0] < 0x40) {
+    return num[0] - 0x30;
+  }
+  if (num[0] > 0x40 && num[0] < 0x47) {
+    return num[0] - 0x41 + 10;
+  }
+  if (num[0] > 0x60 && num[0] < 0x67) {
+    return num[0] - 0x61 + 10;
+  }
+  return 0;
 }

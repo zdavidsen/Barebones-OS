@@ -1,10 +1,12 @@
 /* Written by (Team 02) Chris Nurrenberg, Zac Davidsen, Trey Lewis 1/31/18*/
 
+#include "paramPass.h"
+
 void printString(char* str);
 void readString(char* line);
 void readSector(char* buffer, int sector);
 void readFile(char *name, char *buffer, int *readCount);
-void executeProgram(char *name, int* pid);
+void executeProgram(char *name, int* pid, Params *params);
 void terminate();
 void writeSector(char *name, int segment);
 void deleteFile(char *name);
@@ -27,6 +29,8 @@ pStructs ptable[8];
 
 int main() {
   int i;
+  char *shell;
+  Params defParams;
   makeInterrupt21();
 
   //printhex(interrupt(0x16, 0x0900, 0, 0, 0));
@@ -40,7 +44,11 @@ int main() {
 
   makeTimerInterrupt();
 
-  executeProgram("shell", 0);
+  shell = "shell";
+  defParams.argc = 1;
+  defParams.argv = &shell;
+
+  executeProgram("shell", 0, &defParams);
 
   while (1)
     continue;
@@ -49,6 +57,7 @@ int main() {
 }
 
 void handleInterrupt21(int ax, int bx, int cx, int dx) {
+  Params defaultParams;
   char error[22];
   error[0] = 'I';
   error[1] = 'n';
@@ -87,7 +96,13 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     readFile(bx, cx, dx);
     break;
   case 4:
-    executeProgram(bx, cx);
+    if (dx == 0) {
+      defaultParams.argc = 1;
+      defaultParams.argv = &bx;
+      executeProgram(bx, cx, &defaultParams);
+    } else {
+      executeProgram(bx, cx, dx);
+    }
     break;
   case 5:
     terminate();
@@ -140,147 +155,10 @@ void handleTimerInterrupt(int segment, int sp) {
   returnFromTimer((newSeg + 2) * 0x1000, newSp);
 }
 
-int div(int a, int b) {
-  int count;
-  count = 0;
-  while (a >= b) {
-    a = a-b;
-    count++;
-  }
-  return count;
-}
-
-int mod(int a, int b) {
-  while (a >= b) {
-    a = a-b;
-  }
-  return a;
-}
-
-void printString(char *str) {
-  char al, ah;
-  int ax, i;
-
-  for (i = 0;; i++) {
-    al = str[i];
-    if (al == 0)
-      break;
-    ah = 0xE;
-    ax = ah * 256 + al;
-    interrupt(0x10, ax, 0x07, 0, 0);
-  }
-}
-
-void readString(char *line) {
-  char temp, al, ah;
-  int ax, i;
-  i = 0;
-  while (1) {
-    temp = getKeypress();
-    //printhex(temp);
-    if (temp == 0xd) {
-      line[i] = 0;
-      /* line[i] = 0xa;
-      line[i+1] = 0xd;
-      line[i+2] = 0x0; */
-      ax = 0xE * 256 + 0xa;
-      interrupt(0x10, ax, 0, 0, 0);
-      ax = 0xE * 256 + 0xd;
-      interrupt(0x10, ax, 0, 0, 0);
-      return;
-    } else if (temp == 0x8) {
-      if ( i > 0 ) {
-        i--;
-        ax = 0xE * 256 + 0x8;
-        interrupt(0x10, ax, 0, 0, 0);
-        ax = 0xE * 256 + ' ';
-        interrupt(0x10, ax, 0, 0, 0);
-        ax = 0xE * 256 + 0x8;
-        interrupt(0x10, ax, 0, 0, 0);
-      }
-    } else {
-      line[i] = temp;
-      i++;
-      ax = 0xE * 256 + temp;
-      interrupt(0x10, ax, 0x07, 0, 0);
-    }
-  }
-}
-
-int getKeypress() {
-  return interruptwah(0x16, 0x0000, 0, 0, 0);
-}
-
-void readSector(char *buffer, int sector) {
-  char ah, al, ch, cl, dh, dl;
-  int ax, bx, cx, dx;
-
-  ah = 2;
-  al = 1;
-  bx = buffer;
-  ch = div(sector, 36);
-  cl = mod(sector, 18) + 1;
-  dh = mod(div(sector, 18), 2);
-  dl = 0;
-
-  ax = ah*256 + al;
-  cx = ch*256 + cl;
-  dx = dh*256 + dl;
-
-  interrupt(0x13, ax, bx, cx, dx);
-}
-
-int strnCmp(char *str1, char *str2, int length) {
-  int i, ret;
-
-  for (i = 0; i < length; i++) {
-    ret = str1[i] - str2[i];
-    if (ret != 0)
-      return ret;
-
-    if (str1[i] == 0)
-      return 0;
-  }
-  return 0;
-}
-
-void readFile(char *file, char *buffer, int *readCount) {
-  char dir[512];
-  int entry, field, comp, trash;
-  entry = 0;
-  field = 0;
-
-  if (readCount == 0) {
-    readCount = &trash;
-  }
-
-  *readCount = 0;
-
-  readSector(dir, 2);
-
-  for (entry = 0; entry < 16; entry++) {
-    comp = strnCmp(file, dir + entry * 32, 6);
-    if (comp == 0) {
-      for (field = 6; field < 32; field++) {
-        comp = dir[entry * 32 + field];
-        if (comp == 0)
-          return;
-        readSector(buffer + 512 * (field - 6), comp);
-        (*readCount)++;
-        if (field == 31) {
-          return;
-        }
-      }
-    }
-  }
-
-  *readCount = -1;
-  return;
-}
-  int waiting;
-void executeProgram(char *name, int* pid) {
+void executeProgram(char *name, int* pid, Params *params) {
   char buffer[13312];
-  int i, sectorsRead, segment, procIndex;
+  char *temp;
+  int i, j, sectorsRead, segment, procIndex;
 
   setKernelDataSegment();
 
@@ -292,6 +170,7 @@ void executeProgram(char *name, int* pid) {
 
   if (i == 8) {
     printString("No free entry in process table.\n\r");
+    restoreDataSegment();
     return;
   }
   procIndex = i;
@@ -305,11 +184,28 @@ void executeProgram(char *name, int* pid) {
     return;
   }
 
-  for (i = 0; i < 13312; i++) {
+  for (i = 0; i < 512*sectorsRead; i++) {
     putInMemory(segment, i, buffer[i]);
   }
   initializeProgram(segment);
+  /* Initialize arguments */
+  putInMemory(segment, 0xff1a, params->argc);
 
+  sectorsRead = 0xff1e + params->argc * 2;
+  putInMemory(segment, 0xff1c, 0x1e);
+  putInMemory(segment, 0xff1d, 0xff);
+  for (i = 0; i < params->argc; i++) {
+    temp = params->argv[i];
+    putInMemory(segment, 0xff1e + i*2, sectorsRead);
+    putInMemory(segment, 0xff1f + i*2, sectorsRead >> 8);
+    for (j = 0; ; j++) {
+      putInMemory(segment, sectorsRead, temp[j]);
+      sectorsRead++;
+      if (temp[j] == 0) break;
+    }
+  }
+  /* end argument initialization */
+  
   setKernelDataSegment();
   ptable[procIndex].sp = 0xff00;
   ptable[procIndex].active = 1;
@@ -366,6 +262,113 @@ void blockProcess(int blocking_pid) {
     continue;
   }
   restoreDataSegment();
+}
+
+void printString(char *str) {
+  char al, ah;
+  int ax, i;
+
+  for (i = 0;; i++) {
+    al = str[i];
+    if (al == 0)
+      break;
+    ah = 0xE;
+    ax = ah * 256 + al;
+    interrupt(0x10, ax, 0x07, 0, 0);
+  }
+}
+
+int getKeypress() {
+  return interruptwah(0x16, 0x0000, 0, 0, 0);
+}
+
+void readString(char *line) {
+  char temp, al, ah;
+  int ax, i;
+  i = 0;
+  while (1) {
+    temp = getKeypress();
+    //printhex(temp);
+    if (temp == 0xd) {
+      line[i] = 0;
+      /* line[i] = 0xa;
+      line[i+1] = 0xd;
+      line[i+2] = 0x0; */
+      ax = 0xE * 256 + 0xa;
+      interrupt(0x10, ax, 0, 0, 0);
+      ax = 0xE * 256 + 0xd;
+      interrupt(0x10, ax, 0, 0, 0);
+      return;
+    } else if (temp == 0x8) {
+      if ( i > 0 ) {
+        i--;
+        ax = 0xE * 256 + 0x8;
+        interrupt(0x10, ax, 0, 0, 0);
+        ax = 0xE * 256 + ' ';
+        interrupt(0x10, ax, 0, 0, 0);
+        ax = 0xE * 256 + 0x8;
+        interrupt(0x10, ax, 0, 0, 0);
+      }
+    } else {
+      line[i] = temp;
+      i++;
+      ax = 0xE * 256 + temp;
+      interrupt(0x10, ax, 0x07, 0, 0);
+    }
+  }
+}
+
+void readSector(char *buffer, int sector) {
+  char ah, al, ch, cl, dh, dl;
+  int ax, bx, cx, dx;
+
+  ah = 2;
+  al = 1;
+  bx = buffer;
+  ch = div(sector, 36);
+  cl = mod(sector, 18) + 1;
+  dh = mod(div(sector, 18), 2);
+  dl = 0;
+
+  ax = ah*256 + al;
+  cx = ch*256 + cl;
+  dx = dh*256 + dl;
+
+  interrupt(0x13, ax, bx, cx, dx);
+}
+
+void readFile(char *file, char *buffer, int *readCount) {
+  char dir[512];
+  int entry, field, comp, trash;
+  entry = 0;
+  field = 0;
+
+  if (readCount == 0) {
+    readCount = &trash;
+  }
+
+  *readCount = 0;
+
+  readSector(dir, 2);
+
+  for (entry = 0; entry < 16; entry++) {
+    comp = strnCmp(file, dir + entry * 32, 6);
+    if (comp == 0) {
+      for (field = 6; field < 32; field++) {
+        comp = dir[entry * 32 + field];
+        if (comp == 0)
+          return;
+        readSector(buffer + 512 * (field - 6), comp);
+        (*readCount)++;
+        if (field == 31) {
+          return;
+        }
+      }
+    }
+  }
+
+  *readCount = -1;
+  return;
 }
 
 void writeSector(char *name, int segment) {
@@ -463,4 +466,35 @@ void writeFile(char *name, char *data, int sectors) {
       return;
     }
   }
+}
+
+int strnCmp(char *str1, char *str2, int length) {
+  int i, ret;
+
+  for (i = 0; i < length; i++) {
+    ret = str1[i] - str2[i];
+    if (ret != 0)
+      return ret;
+
+    if (str1[i] == 0)
+      return 0;
+  }
+  return 0;
+}
+
+int div(int a, int b) {
+  int count;
+  count = 0;
+  while (a >= b) {
+    a = a-b;
+    count++;
+  }
+  return count;
+}
+
+int mod(int a, int b) {
+  while (a >= b) {
+    a = a-b;
+  }
+  return a;
 }

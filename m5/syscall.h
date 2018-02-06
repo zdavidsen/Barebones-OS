@@ -15,14 +15,14 @@
 #define printString(string) interrupt(PRINTSTRING, string, 0, 0)
 #define readString(buffer) interrupt(READSTRING, buffer, 0, 0)
 #define readSector(buffer, sector) interrupt(READSECTOR, buffer, sector, 0)
-#define readFile(name, buffer, count) interrupt(READFILE, name, buffer, count)
-#define executeProgram(data, pid) interrupt(EXECUTEPROGRAM, data, pid, 0)
+#define readFile(name, buffer, countref) interrupt(READFILE, name, buffer, countref)
+#define executeProgram(name, pidref, paramsref) interrupt(EXECUTEPROGRAM, name, pidref, paramsref)
 #define terminate() interrupt(TERMINATE, 0, 0, 0)
 #define writeSector(data, sector) interrupt(WRITESECTOR, data, sector, 0)
 #define deleteFile(name) interrupt(DELETEFILE, name, 0, 0)
 #define writeFile(name, data, numSectors) interrupt(WRITEFILE, name, data, numSectors)
 #define killProcess(pid) interrupt(0x21, 9, pid, 0, 0)
 #define blockProcess(blocking_pid) interrupt(0x21, 10, blocking_pid, 0, 0)
-#define getKeypress(keycode) interrupt(0x21, 11, keycode, 0, 0)
+#define getKeypress(keycoderef) interrupt(0x21, 11, keycoderef, 0, 0)
 
 #endif /* M4_SYSCALL_H_ */

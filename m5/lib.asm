@@ -6,6 +6,7 @@
 	.global _interrupt
 	.global _enableInterrupts
 	.global _interruptwah
+	.global ___mkargv
 
 ;int interrupt (int number, int AX, int BX, int CX, int DX)
 _interrupt:
@@ -57,3 +58,6 @@ intr2:	int #0x00	;call the interrupt (00 will be changed above)
 	;mov ah,#0	;we only want AL returned
 	pop bp
 	ret
+
+___mkargv:
+	nop
