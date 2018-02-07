@@ -10,6 +10,11 @@ void listDirectory();
 void creatFile(char *name);
 void clearScreen();
 void drawStuff();
+void processInput();
+void printhex(int a);
+void reorganizeHistory(char **buffer);
+void refreshLine();
+void refreshBuffer(char *buffer, int size);
 
 int main(int argc, char *argv[]) {
   char cmdBuf[80];
@@ -20,6 +25,32 @@ int main(int argc, char *argv[]) {
   int readCount;
   int pid;
   Params params;
+  /* command history stuff*/
+  char history[20][80];
+  char *commandStrings[13];
+  int currentCommand, maxCommands, tempPress, cmdIndex, acceptingInput;
+  int tabIndex, tabCount;
+  char tabBuffer[80];
+
+  // for (i = 0; i < 20; i++) {
+  //   history[i][0] = 0;
+  // }
+  maxCommands = 0;
+  cmdIndex = 0;
+  /* set command buffer */
+  commandStrings[0] = "type";
+  commandStrings[1] = "execute";
+  commandStrings[2] = "delete";
+  commandStrings[3] = "copy";
+  commandStrings[4] = "dir";
+  commandStrings[5] = "create";
+  commandStrings[6] = "clear";
+  commandStrings[7] = "bgcol";
+  commandStrings[8] = "kill";
+  commandStrings[9] = "execforeground";
+  commandStrings[10] = "draw";
+  commandStrings[11] = "pg1";
+  commandStrings[12] = "pg2";
 
   enableInterrupts();
   while (1) {
@@ -29,11 +60,86 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < 13312; i++) {
       buffer[i] = 0;
     }
-  
+    /* begin processing input*/ 
+    refreshBuffer(tabBuffer, 80);
+    cmdIndex = 0;
+    currentCommand = 0;
+    refreshLine();
+    acceptingInput = 1;
+    while (acceptingInput) {
+      getKeypress(&tempPress);
+      switch (tempPress) {
+        case KEY_ARROW_UP:
+          if (currentCommand < 19){
+            if (currentCommand == 0){
+              strnCpy(cmdBuf, history[0], strLen(cmdBuf));
+            }
+            refreshLine();            
+            currentCommand++;
+            printString(history[currentCommand]);
+          }
+          break;
+        case KEY_ARROW_DOWN:
+          if (currentCommand > 0){
+            refreshLine();            
+            currentCommand--;
+            printString(history[currentCommand]);
+          }
+          break;
+        case KEY_ARROW_RIGHT:
+        case KEY_ARROW_LEFT:
+          break;
+        case KEY_ENTER:
+          acceptingInput = 0;
+          cmdBuf[cmdIndex++] = 0x0;
+          printString("\n\r");
+          break;
+        case KEY_BACKSPACE:
+          if (cmdIndex > 0){
+            cmdIndex--;
+            printString("\b \b");
+          }
+          cmdBuf[cmdIndex] = '\0';
+          break;
+        case KEY_TAB:
+          tabIndex = 0;
+          tabCount = 0;
+          for (i = 0; i < 13; i++){
+            if (strnCmp(cmdBuf, commandStrings[i], strLen(cmdBuf))==0){
+              tabCount++;
+              tabIndex += strnCpy(commandStrings[i], tabBuffer + tabIndex,
+                strLen(commandStrings[i]));
+              tabBuffer[tabIndex++] = ' ';
+            }
+          }
+          if (tabCount == 1){
+            tabCount = tabIndex - strLen(cmdBuf);
+            strnCpy(tabBuffer + strLen(cmdBuf), cmdBuf + cmdIndex, strLen(tabBuffer));
+            printString(cmdBuf + cmdIndex);
+            cmdIndex += tabCount;
+          } else if (tabCount > 1) {
+            printString("\n\r");
+            printString(tabBuffer);
+            printString("\n\r");
+            refreshBuffer(tabBuffer, 80);
+            refreshLine();
+            printString(cmdBuf);
+          }
+          break;
+        default:
+          cmdBuf[cmdIndex] = tempPress;
+          printString(cmdBuf + cmdIndex++);
+          break;
+      }
+    }
+    /* add current command to history*/
+    reorganizeHistory(&history);
+    strnCpy(cmdBuf, history[0], cmdIndex);
+    if (maxCommands < 19){
+      maxCommands++;
+    }
 
-    interrupt(PRINTSTRING, "SHELL: ", 0, 0);
-    interrupt(READSTRING, cmdBuf, 0, 0);
-
+    /* end processing input, begin parse arguments*/
     parseArguments(cmdBuf, &argCount, argArray);
 
     if (strnCmp(argArray[0], "type", 5) == 0 && argCount >= 2) {
@@ -82,6 +188,79 @@ int main(int argc, char *argv[]) {
     } else {
       printString("Invalid Command\n\r");
     }
+    for (i = 0; i < maxCommands; i++){
+      printhex(history[i]);
+      //printString("\n\r");
+    }
+  }
+}
+
+void reorganizeHistory(char ***buffer){
+  int i;
+  char *temp;
+  temp = buffer[19];
+  for (i = 19; i > 0; i--) {
+    strnCpy((*buffer)[i-1], (*buffer)[i], strLen((*buffer)[i-1]));
+  }
+  buffer[0] = temp;
+}
+
+void refreshBuffer(char *buffer, int size){
+  int i;
+  for (i = 0; i < size; i++){
+    buffer[i] = 0x0;
+  }
+  return;
+}
+
+void refreshLine(){
+  int i;
+  printString("\r");
+  for (i = 0; i < 79; i++) {
+    printString(" ");
+  }
+  printString("\r");
+  printString("SHELL: ");
+}
+
+void processInput(char** historyArray, int *currentCommand, int maxCommands, char* cmdBuf){
+  int temp;
+  getKeypress(&temp);
+  refreshBuffer(cmdBuf, 80);
+  if (temp == KEY_ARROW_UP){
+    /* up */
+    refreshLine();
+
+    printhex(*currentCommand);
+    printhex(maxCommands);
+    if (*currentCommand < maxCommands){
+      printString("HEY THERE\0");
+      printString(historyArray[*currentCommand]);
+      (*currentCommand)++;
+    }
+    processInput(historyArray, currentCommand, maxCommands, cmdBuf);
+
+  } else if (temp == KEY_ARROW_DOWN){
+    /* down */
+    /*printhex(temp);*/
+    refreshLine();
+    printhex(*currentCommand);
+    printhex(maxCommands);
+    if (*currentCommand > 0){
+      printString(historyArray[*currentCommand]);
+      (*currentCommand)--;
+    }
+    processInput(historyArray, currentCommand, maxCommands, cmdBuf);
+
+  } else if ((char)temp == 0x0){
+    /* do nothing*/
+    processInput(historyArray, currentCommand, maxCommands, cmdBuf);
+  }
+  else {
+    /* only allow access to command history on first keystroke*/
+    cmdBuf[0] = (char)temp;
+    printString(cmdBuf);
+    interrupt(READSTRING, cmdBuf + 1, 0, 0);
   }
 }
 
