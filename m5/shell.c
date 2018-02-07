@@ -28,14 +28,16 @@ int main(int argc, char *argv[]) {
   /* command history stuff*/
   char history[20][80];
   char *commandStrings[14];
-  int currentCommand, maxCommands, tempPress, cmdIndex, acceptingInput;
+  int currentCommand, numCommands, keyPress, cmdIndex, acceptingInput;
   int tabIndex, tabCount;
   char tabBuffer[100];
+  char temp[2];
+  temp[1] = 0;
 
   // for (i = 0; i < 20; i++) {
   //   history[i][0] = 0;
   // }
-  maxCommands = 0;
+  numCommands = 0;
   cmdIndex = 0;
   /* set command buffer */
   commandStrings[0] = "type";
@@ -68,16 +70,18 @@ int main(int argc, char *argv[]) {
     refreshLine();
     acceptingInput = 1;
     while (acceptingInput) {
-      getKeypress(&tempPress);
-      switch (tempPress) {
+      getKeypress(&keyPress);
+      switch (keyPress) {
         case KEY_ARROW_UP:
-          if (currentCommand < 19) {
+          if (currentCommand < 19 && currentCommand < numCommands) {
             if (currentCommand == 0) {
-              strnCpy(cmdBuf, history[0], strLen(cmdBuf));
+              strnCpy(cmdBuf, history[0], strLen(cmdBuf)+1);
             }
             refreshLine();
             currentCommand++;
             printString(history[currentCommand]);
+            cmdIndex = strLen(history[currentCommand]);
+            strnCpy(history[currentCommand], cmdBuf,  cmdIndex + 1);
           }
           break;
         case KEY_ARROW_DOWN:
@@ -85,10 +89,9 @@ int main(int argc, char *argv[]) {
             refreshLine();
             currentCommand--;
             printString(history[currentCommand]);
+            cmdIndex = strLen(history[currentCommand]);
+            strnCpy(history[currentCommand], cmdBuf, cmdIndex + 1);
           }
-          break;
-        case KEY_ARROW_RIGHT:
-        case KEY_ARROW_LEFT:
           break;
         case KEY_ENTER:
           acceptingInput = 0;
@@ -129,14 +132,25 @@ int main(int argc, char *argv[]) {
           }
           break;
         default:
-          cmdBuf[cmdIndex] = tempPress;
-          printString(cmdBuf + cmdIndex++);
+          if (KEYCODE_TO_ASCII(keyPress) == 0) {
+            break;
+          }
+          cmdBuf[cmdIndex++] = keyPress;
+          cmdBuf[cmdIndex] = 0;
+          temp[0] = keyPress;
+          printString(temp);
           break;
       }
     }
-    /* add current command to history*/
-    reorganizeHistory(&history);
-    strnCpy(cmdBuf, history[0], cmdIndex);
+    if (numCommands < 20) {
+      numCommands++;
+    }
+    /* add current command to history */
+    strnCpy(cmdBuf, history[0], strLen(cmdBuf) + 1);
+      for (i = 19; i > 0; i--) {
+        strnCpy(history[i-1], history[i], strLen(history[i-1])+1);
+      }
+    //reorganizeHistory(history);
 
     /* end processing input, begin parse arguments*/
     parseArguments(cmdBuf, &argCount, argArray);
@@ -192,14 +206,11 @@ int main(int argc, char *argv[]) {
   }
 }
 
-void reorganizeHistory(char ***buffer) {
+void reorganizeHistory(char **buffer) {
   int i;
-  char *temp;
-  temp = buffer[19];
   for (i = 19; i > 0; i--) {
-    strnCpy((*buffer)[i-1], (*buffer)[i], strLen((*buffer)[i-1]));
+    strnCpy(buffer[i-1], buffer[i], strLen(buffer[i-1])+1);
   }
-  buffer[0] = temp;
 }
 
 void refreshBuffer(char *buffer, int size) {
@@ -220,7 +231,7 @@ void refreshLine() {
   printString("SHELL: ");
 }
 
-void processInput(char** historyArray, int *currentCommand, int maxCommands,
+void processInput(char** historyArray, int *currentCommand, int numCommands,
   char* cmdBuf) {
   int temp;
   getKeypress(&temp);
@@ -230,29 +241,29 @@ void processInput(char** historyArray, int *currentCommand, int maxCommands,
     refreshLine();
 
     printhex(*currentCommand);
-    printhex(maxCommands);
-    if (*currentCommand < maxCommands) {
+    printhex(numCommands);
+    if (*currentCommand < numCommands) {
       printString("HEY THERE\0");
       printString(historyArray[*currentCommand]);
       (*currentCommand)++;
     }
-    processInput(historyArray, currentCommand, maxCommands, cmdBuf);
+    processInput(historyArray, currentCommand, numCommands, cmdBuf);
 
   } else if (temp == KEY_ARROW_DOWN) {
     /* down */
     /*printhex(temp);*/
     refreshLine();
     printhex(*currentCommand);
-    printhex(maxCommands);
+    printhex(numCommands);
     if (*currentCommand > 0) {
       printString(historyArray[*currentCommand]);
       (*currentCommand)--;
     }
-    processInput(historyArray, currentCommand, maxCommands, cmdBuf);
+    processInput(historyArray, currentCommand, numCommands, cmdBuf);
 
   } else if ((char)temp == 0x0) {
     /* do nothing*/
-    processInput(historyArray, currentCommand, maxCommands, cmdBuf);
+    processInput(historyArray, currentCommand, numCommands, cmdBuf);
   } else {
     /* only allow access to command history on first keystroke*/
     cmdBuf[0] = (char)temp;
