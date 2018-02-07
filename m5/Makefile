@@ -17,8 +17,7 @@ floppya.img:: loadFile shell printargs
 	./loadFile phello
 	./loadFile printargs
 	#force bootload and kernel to be written to disk
-	if [ -e bootload ]; then touch bootload; fi
-	if [ -e kernel ]; then touch kernel; fi
+	make write_bootload write_kernel
 
 loadFile: loadFile.c
 	gcc loadFile.c -o loadFile
@@ -29,6 +28,9 @@ bootload: bootload.asm
 floppya.img:: bootload
 	dd if=bootload of=floppya.img bs=512 count=1 conv=notrunc
 
+write_bootload: bootload
+	dd if=bootload of=floppya.img bs=512 count=1 conv=notrunc
+	
 kernel: kernel.c kernel_asm.o paramPass.h helpers.o
 	$(CC) $(CFLAGS) -o kernel.o kernel.c
 	$(LD) -o kernel -d kernel.o kernel_asm.o helpers.o
@@ -37,6 +39,9 @@ kernel_asm.o: kernel.asm
 	$(AS) kernel.asm -o kernel_asm.o
 
 floppya.img:: kernel
+	dd if=kernel of=floppya.img bs=512 conv=notrunc seek=3
+
+write_kernel: kernel
 	dd if=kernel of=floppya.img bs=512 conv=notrunc seek=3
 
 shell: shell.c lib.o syscall.h keycode.h paramPass.h helpers.o
@@ -57,4 +62,4 @@ run: all
 	qemu-system-i386 -fda floppya.img -boot a -no-fd-bootchk
 
 clean:
-	rm -f core kernel bootload *.o *~ floppya.img loadFile shell printargs.o printargs
+	rm -f core kernel bootload *.o *~ floppya.img loadFile shell printargs
