@@ -26,4 +26,4 @@ Extra features:
     tab completion of command names in shell (no arguments though)
     command line parameter passing to executed programs (test with "execute printa
         [up to 8 args]") only 8 args because that's the size of the array.
-    exit command, does not shut off computer
+    exit command, exits shell. Computer turns off when all processes terminate

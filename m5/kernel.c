@@ -229,18 +229,27 @@ void executeProgram(char *name, int* pid, Params *params) {
 
 void terminate() {
   int i;
+  int count;
+  count = 0;
 
-  /* interrupt(0x21, 4, str, 0x2000, 0); */
   setKernelDataSegment();
+
+  ptable[currentProcess].active = 0;
+
   for (i = 0; i < 8; i++) {
     if (ptable[i].wait_id == currentProcess) {
       ptable[i].wait_id = -1;
       ptable[i].active = 1;
     }
+    if (ptable[i].active != 0) {
+      count++;
+    }
   }
 
-
-  ptable[currentProcess].active = 0;
+  if (count == 0) {
+    interrupt(0x15, 0x5301, 0, 0, 0);
+    interrupt(0x15, 0x5307, 1, 3, 0);
+  }
 
   restoreDataSegment();
 

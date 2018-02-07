@@ -147,9 +147,9 @@ int main(int argc, char *argv[]) {
     }
     /* add current command to history */
     strnCpy(cmdBuf, history[0], strLen(cmdBuf) + 1);
-      for (i = 19; i > 0; i--) {
-        strnCpy(history[i-1], history[i], strLen(history[i-1])+1);
-      }
+    for (i = 19; i > 0; i--) {
+      strnCpy(history[i-1], history[i], strLen(history[i-1])+1);
+    }
     //reorganizeHistory(history);
 
     /* end processing input, begin parse arguments*/
