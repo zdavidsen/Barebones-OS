@@ -24,6 +24,7 @@ Extra features:
         keys or ijkl to navigate the screen, space bar to print a pixel, and +/-
         to change the size of printed pixels
     tab completion of command names in shell (no arguments though)
+    command history, use up and down arrows to view past commands.
     command line parameter passing to executed programs (test with "execute printa
         [up to 8 args]") only 8 args because that's the size of the array.
     exit command, exits shell. Computer turns off when all processes terminate
