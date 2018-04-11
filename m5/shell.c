@@ -10,9 +10,7 @@ void listDirectory();
 void creatFile(char *name);
 void clearScreen();
 void drawStuff();
-void processInput();
 void printhex(int a);
-void reorganizeHistory(char **buffer);
 void refreshLine();
 void refreshBuffer(char *buffer, int size);
 
@@ -67,7 +65,7 @@ int main(int argc, char *argv[]) {
     refreshBuffer(tabBuffer, 80);
     cmdIndex = 0;
     currentCommand = 0;
-    refreshLine();
+    printString("SHELL: ");
     acceptingInput = 1;
     while (acceptingInput) {
       getKeypress(&keyPress);
@@ -126,9 +124,9 @@ int main(int argc, char *argv[]) {
             printString("\n\r");
             printString(tabBuffer);
             printString("\n\r");
-            refreshBuffer(tabBuffer, 80);
             refreshLine();
             printString(cmdBuf);
+            refreshBuffer(tabBuffer, 80);
           }
           break;
         default:
@@ -206,13 +204,6 @@ int main(int argc, char *argv[]) {
   }
 }
 
-void reorganizeHistory(char **buffer) {
-  int i;
-  for (i = 19; i > 0; i--) {
-    strnCpy(buffer[i-1], buffer[i], strLen(buffer[i-1])+1);
-  }
-}
-
 void refreshBuffer(char *buffer, int size) {
   int i;
   for (i = 0; i < size; i++) {
@@ -229,47 +220,6 @@ void refreshLine() {
   }
   printString("\r");
   printString("SHELL: ");
-}
-
-void processInput(char** historyArray, int *currentCommand, int numCommands,
-  char* cmdBuf) {
-  int temp;
-  getKeypress(&temp);
-  refreshBuffer(cmdBuf, 80);
-  if (temp == KEY_ARROW_UP) {
-    /* up */
-    refreshLine();
-
-    printhex(*currentCommand);
-    printhex(numCommands);
-    if (*currentCommand < numCommands) {
-      printString("HEY THERE\0");
-      printString(historyArray[*currentCommand]);
-      (*currentCommand)++;
-    }
-    processInput(historyArray, currentCommand, numCommands, cmdBuf);
-
-  } else if (temp == KEY_ARROW_DOWN) {
-    /* down */
-    /*printhex(temp);*/
-    refreshLine();
-    printhex(*currentCommand);
-    printhex(numCommands);
-    if (*currentCommand > 0) {
-      printString(historyArray[*currentCommand]);
-      (*currentCommand)--;
-    }
-    processInput(historyArray, currentCommand, numCommands, cmdBuf);
-
-  } else if ((char)temp == 0x0) {
-    /* do nothing*/
-    processInput(historyArray, currentCommand, numCommands, cmdBuf);
-  } else {
-    /* only allow access to command history on first keystroke*/
-    cmdBuf[0] = (char)temp;
-    printString(cmdBuf);
-    interrupt(READSTRING, cmdBuf + 1, 0, 0);
-  }
 }
 
 void parseArguments(char *args, int *argc, char **argv) {
