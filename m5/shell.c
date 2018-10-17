@@ -112,6 +112,7 @@ int main(int argc, char *argv[]) {
               tabIndex += strnCpy(commandStrings[i], tabBuffer + tabIndex,
                 strLen(commandStrings[i]));
               tabBuffer[tabIndex++] = ' ';
+              tabBuffer[tabIndex] = 0;
             }
           }
           if (tabCount == 1) {
@@ -120,6 +121,7 @@ int main(int argc, char *argv[]) {
               strLen(tabBuffer));
             printString(cmdBuf + cmdIndex);
             cmdIndex += tabCount;
+            refreshBuffer(tabBuffer, 80);
           } else if (tabCount > 1) {
             printString("\n\r");
             printString(tabBuffer);
@@ -164,7 +166,11 @@ int main(int argc, char *argv[]) {
     } else if (strnCmp(argArray[0], "execute", 8) == 0 && argCount >= 2) {
       params.argc = argCount - 1;
       params.argv = argArray + 1;
-      executeProgram(argArray[1], 0, &params);
+      executeProgram(argArray[1], &pid, &params);
+      if(pid == -1)
+      {
+        printString("Process could not be created\n\r");
+      }
     } else if (strnCmp(argArray[0], "delete", 7) == 0) {
       deleteFile(argArray[1]);
     } else if (strnCmp(argArray[0], "copy", 5) == 0 && argCount == 3) {
@@ -191,11 +197,14 @@ int main(int argc, char *argv[]) {
       drawStuff();
     } else if (strnCmp(argArray[0], "kill", 5) == 0) {
       killProcess(argArray[1][0] - 0x30);
-    } else if (strnCmp(argArray[0], "execforeground", 15) == 0) {
+    } else if (strnCmp(argArray[0], "execforeground", 15) == 0 && argCount >= 2) {
       params.argc = argCount - 1;
       params.argv = argArray + 1;
       executeProgram(argArray[1], &pid, &params);
-      blockProcess(pid);
+      if(pid == -1)
+        printString("Process could not be created\n\r");
+      else
+        blockProcess(pid);
     } else if (strnCmp(argArray[0], "exit", 5) == 0) {
       terminate();
     } else {

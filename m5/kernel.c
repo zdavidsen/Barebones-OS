@@ -60,29 +60,6 @@ int main() {
 /* Syscalls */
 void handleInterrupt21(int ax, int bx, int cx, int dx) {
   Params defaultParams;
-  char error[22];
-  error[0] = 'I';
-  error[1] = 'n';
-  error[2] = 'c';
-  error[3] = 'o';
-  error[4] = 'r';
-  error[5] = 'r';
-  error[6] = 'e';
-  error[7] = 'c';
-  error[8] = 't';
-  error[9] = ' ';
-  error[10] = 'a';
-  error[11] = 'x';
-  error[12] = ' ';
-  error[13] = 'v';
-  error[14] = 'a';
-  error[15] = 'l';
-  error[16] = 'u';
-  error[17] = 'e';
-  error[18] = '.';
-  error[19] = '\n';
-  error[20] = '\r';
-  error[21] = '\0';
 
   switch (ax) {
   case 0:
@@ -128,7 +105,9 @@ void handleInterrupt21(int ax, int bx, int cx, int dx) {
     *(int*)bx = getKeypress();
     break;
   default:
-    printString(error);
+    setKernelDataSegment();
+    printString("Incorrect ax value.\n\r");
+    restoreDataSegment();
   }
 }
 
@@ -164,6 +143,9 @@ void executeProgram(char *name, int* pid, Params *params) {
   char *temp;
   int i, j, sectorsRead, segment, procIndex;
 
+  if (pid != 0)
+    *pid = -1;
+
   setKernelDataSegment();
 
   for (i = 0; i < 8; i++) {
@@ -172,19 +154,25 @@ void executeProgram(char *name, int* pid, Params *params) {
     }
   }
 
+  restoreDataSegment();
+
   if (i == 8) {
-    printString("No free entry in process table.\n\r");
-    restoreDataSegment();
+    //setKernelDataSegment();
+    //printString("No free entry in process table.\n\r");
+    //restoreDataSegment();
     return;
   }
   procIndex = i;
-  restoreDataSegment();
 
   segment = (i + 2) * 0x1000;
 
   readFile(name, buffer, &sectorsRead);
 
   if (sectorsRead == -1) {
+    //printString(name);
+    //setKernelDataSegment();
+    //printString(" is not a valid program\n\r");
+    //restoreDataSegment();
     return;
   }
 
@@ -273,13 +261,17 @@ void killProcess(int pid) {
 }
 
 void blockProcess(int blocking_pid) {
-  int temp, temp_id;
+  int temp;
   temp = blocking_pid;
   setKernelDataSegment();
-  temp_id = currentProcess;
+  if (temp > 7 || temp <= 0 || ptable[temp].active == 0)
+  {
+    restoreDataSegment();
+    return;
+  }
   ptable[currentProcess].wait_id = temp;
   ptable[currentProcess].active = 2;
-  while (ptable[temp_id].active == 2) {
+  while (ptable[currentProcess].active == 2) {
     continue;
   }
   restoreDataSegment();
